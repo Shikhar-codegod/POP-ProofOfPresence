@@ -1,0 +1,58 @@
+# -----------------------------------------------------------------------------
+# ProofOfPresence (POP) - Edge Node Configuration
+# -----------------------------------------------------------------------------
+
+# Machine Learning Detection Configuration
+detection:
+  # Path to YOLO model weights (auto-downloads from Ultralytics if missing)
+  model_path: "yolo11n.pt"
+  confidence_threshold: 0.35
+  target_class_id: 0  # 0 = person in COCO dataset
+
+# Frame Sampling Rules (Video time, not wall clock)
+sampling:
+  # Sample 1 frame every N seconds of video timeline
+  interval_sec: 2
+  max_frames: null  # null for complete video, or integer limit for rapid testing
+
+# Temporal Aggregation & Trainer Filtering
+counting:
+  # Rolling median window size K (odd number recommended, e.g. 5)
+  rolling_window_k: 5
+  
+  # Trainer exclusion mode: "zone" | "subtract_one" | "none"
+  # - "zone": Excludes person detections centered within the specified zone rectangle
+  # - "subtract_one": Constant offset subtracting 1 person for designated instructor
+  # - "none": Pure person count without trainer subtraction
+  trainer_exclusion_mode: "zone"
+  
+  # Trainer zone rectangle specified as fractions (0.0 to 1.0) of frame width and height:
+  # [x_min, y_min, x_max, y_max]. Defaults to front podium / lecture area.
+  trainer_zone:
+    x_min: 0.0
+    y_min: 0.0
+    x_max: 0.35
+    y_max: 0.50
+
+# Ingestion Backend Target
+backend:
+  # URL of the central POP backend ingestion endpoint
+  url: "http://localhost:8000/api/v1/readings"
+  
+  # Plaintext API key provisioned for this camera node (seed prints this)
+  device_key: "devkey_replace_with_camera_key"
+  
+  # Target facility and camera UUID identifiers
+  centre_id: "a1000000-0000-4000-8000-000000000001"
+  camera_id: "replace_with_camera_uuid"
+  
+  # Network retry configuration
+  max_retries: 4
+  backoff_factor: 1.5
+
+# Visual Artifacts & Logging
+output:
+  csv_path: "output/readings.csv"
+  plot_path: "output/count_timeline.png"
+  save_annotated_video: false
+  annotated_video_path: "output/annotated_detection.mp4"
