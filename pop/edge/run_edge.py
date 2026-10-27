@@ -18,6 +18,7 @@ import numpy as np
 import yaml
 
 from capture import sample_video_frames
+from client import EdgeBackendClient
 from counter import RollingMedianFilter, compute_headcount, is_point_in_zone, get_box_center
 from detector import YOLO11nDetector
 from quality import compute_frame_quality
@@ -209,6 +210,20 @@ def run_pipeline(
     save_video = save_video_override if save_video_override is not None else out_cfg.get("save_annotated_video", False)
     annotated_path = out_cfg.get("annotated_video_path", "pop/edge/output/annotated.mp4")
 
+    # Backend client setup
+    backend_client = None
+    if not no_post:
+        b_cfg = config.get("backend", {})
+        backend_client = EdgeBackendClient(
+            backend_url=b_cfg.get("url", "http://localhost:8000/api/v1/readings"),
+            device_key=b_cfg.get("device_key", ""),
+            centre_id=b_cfg.get("centre_id", ""),
+            camera_id=b_cfg.get("camera_id", ""),
+            max_retries=b_cfg.get("max_retries", 4),
+            backoff_factor=b_cfg.get("backoff_factor", 1.5),
+        )
+        logger.info(f"Initialized EdgeBackendClient pointing to: {backend_client.backend_url}")
+
     video_writer = None
     processed_records: List[Dict[str, Any]] = []
 
@@ -245,6 +260,16 @@ def run_pipeline(
             f"Quality: {quality_score:.2f}"
         )
 
+        # 5. Ingest telemetry reading to backend if enabled
+        posted_reading = None
+        if backend_client is not None:
+            posted_reading = backend_client.post_reading(
+                timestamp=sample_time,
+                raw_count=raw_count,
+                stable_count=stable_count,
+                frame_quality=quality_score,
+            )
+
         record = {
             "timestamp": sample_time,
             "video_time_sec": video_sec,
@@ -254,6 +279,7 @@ def run_pipeline(
             "frame_quality": quality_score,
             "brightness": brightness,
             "sharpness": sharpness,
+            "posted_to_backend": bool(posted_reading),
         }
         processed_records.append(record)
 
@@ -297,7 +323,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="ProofOfPresence (POP) Edge Analytics Runner")
     parser.add_argument("--config", default="pop/edge/config.yaml", help="Path to config.yaml")
     parser.add_argument("--video", default=None, help="Input video file path")
-    parser.add_argument("--no-post", action="store_true", default=True, help="Disable backend HTTP ingestion")
+    parser.add_argument("--no-post", action="store_true", default=False, help="Disable backend HTTP ingestion (offline mode)")
     parser.add_argument("--save-video", action="store_true", default=False, help="Render annotated output video")
 
     args = parser.parse_args()
