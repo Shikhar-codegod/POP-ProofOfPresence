@@ -1,0 +1,15 @@
+video_id,timestamp_sec,true_count,scenario,notes
+sample_classroom_01,0.0,12,baseline_lecture,Students seated at desks; trainer in exclusion zone
+sample_classroom_01,2.0,12,baseline_lecture,Steady state student occupancy
+sample_classroom_01,4.0,12,trainer_movement,Trainer pacing at podium inside exclusion zone
+sample_classroom_01,6.0,13,transient_passerby,One candidate enters classroom through side aisle
+sample_classroom_01,8.0,13,transient_passerby,Candidate seated at spare workstation
+sample_classroom_01,10.0,12,transient_passerby,Candidate departs classroom
+sample_classroom_01,12.0,12,partial_occlusion,Rear student briefly occluded by aisle column
+sample_classroom_01,14.0,12,baseline_lecture,Final baseline verification frame
+sample_classroom_02,0.0,20,baseline_lecture,Large batch morning lecture
+sample_classroom_02,2.0,20,baseline_lecture,Full attendance verify
+sample_classroom_02,4.0,19,partial_occlusion,Student picking up notebook
+sample_classroom_02,6.0,20,lighting_variation,Overhead lights switched on
+sample_classroom_02,8.0,20,trainer_movement,Trainer demonstrating equipment
+sample_classroom_02,10.0,20,baseline_lecture,Stable count
