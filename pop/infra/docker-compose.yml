@@ -1,0 +1,80 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: pop_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-pop_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pop_password}
+      POSTGRES_DB: ${POSTGRES_DB:-pop_db}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-pop_user} -d ${POSTGRES_DB:-pop_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    networks:
+      - pop_network
+
+  redis:
+    image: redis:7-alpine
+    container_name: pop_redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 3s
+    networks:
+      - pop_network
+
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: pop_backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-pop_user}:${POSTGRES_PASSWORD:-pop_password}@postgres:5432/${POSTGRES_DB:-pop_db}
+      - DATABASE_SYNC_URL=postgresql+psycopg2://${POSTGRES_USER:-pop_user}:${POSTGRES_PASSWORD:-pop_password}@postgres:5432/${POSTGRES_DB:-pop_db}
+      - REDIS_URL=redis://redis:6379/0
+    ports:
+      - "${APP_PORT:-8000}:8000"
+    volumes:
+      - ../backend:/app
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - pop_network
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  pop_network:
+    driver: bridge

@@ -1,0 +1,6 @@
+{
+  "summary":  "Implementation plan for Phase 1 of ProofOfPresence (POP), an edge-AI video analytics platform verifying attendance and infrastructure at skilling centres with edge YOLO11n, FastAPI backend, PostgreSQL, and strict privacy boundaries.",
+  "updatedAt":  "2026-10-27T18:50:42.060357908Z",
+  "requestFeedback":  true,
+  "userFacing":  true
+}

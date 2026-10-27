@@ -1,0 +1,78 @@
+name: POP CI
+
+on:
+  push:
+    branches: [ "main", "master", "develop" ]
+  pull_request:
+    branches: [ "main", "master", "develop" ]
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11"]
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: pop_user
+          POSTGRES_PASSWORD: pop_password
+          POSTGRES_DB: pop_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+
+      - name: Install Linting Tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff pytest
+
+      - name: Run Ruff Lint Check
+        run: |
+          ruff check pop/backend pop/edge
+
+      - name: Install Backend Dependencies
+        run: |
+          pip install -r pop/backend/requirements.txt
+
+      - name: Install Edge Dependencies
+        run: |
+          pip install -r pop/edge/requirements.txt
+
+      - name: Run Backend Tests
+        env:
+          DATABASE_URL: postgresql+asyncpg://pop_user:pop_password@localhost:5432/pop_db
+          SECRET_KEY: test_secret_key_ci_only_do_not_use_in_production
+          ENVIRONMENT: test
+        run: |
+          pytest pop/backend/tests -v
+
+      - name: Run Edge Tests
+        run: |
+          pytest pop/edge/tests -v

@@ -1,0 +1,6 @@
+{
+  "name": "POP - ProofOfPresence",
+  "description": "Edge-AI video analytics platform verifying attendance and infrastructure at government-funded skilling centres",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

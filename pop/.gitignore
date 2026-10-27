@@ -1,0 +1,73 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Environments & virtualenvs
+.venv/
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Environment variables & secrets
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# Video & media files (CCTV feeds, raw clips, test recordings)
+*.mp4
+*.avi
+*.mkv
+*.mov
+*.h264
+*.ts
+*.raw
+recordings/
+sample_videos/
+videos/
+
+# Model weights & large ML files
+*.pt
+*.onnx
+*.engine
+*.tflite
+*.weights
+*.bin
+weights/
+runs/
+
+# Node & Frontend dependencies
+node_modules/
+dist/
+build/
+.next/
+
+# Data dumps, logs, and database files
+*.log
+*.sqlite
+*.sqlite3
+*.dump
+*.sql
+*.csv.bak
+data_dumps/
+output/
+plots/
+
+# IDE & OS files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Test & coverage artifacts
+.pytest_cache/
+.coverage
+htmlcov/
+.ruff_cache/
