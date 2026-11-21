@@ -16,20 +16,20 @@ BACKEND_DIR = str(Path(__file__).resolve().parents[1])
 if BACKEND_DIR not in sys.path:
     sys.path.insert(0, BACKEND_DIR)
 
-from app.core.config import settings
-from app.core.database import get_db
-from app.core.security import (
+from app.core.config import settings  # noqa: E402
+from app.core.database import get_db  # noqa: E402
+from app.core.security import (  # noqa: E402
     create_access_token,
     generate_raw_device_key,
     get_password_hash,
     hash_device_key,
 )
-from app.main import app
-from app.models.base import Base
-from app.models.camera import Camera
-from app.models.centre import Centre
-from app.models.device_key import DeviceKey
-from app.models.user import User, UserRole
+from app.main import app  # noqa: E402
+from app.models.base import Base  # noqa: E402
+from app.models.camera import Camera  # noqa: E402
+from app.models.centre import Centre  # noqa: E402
+from app.models.device_key import DeviceKey  # noqa: E402
+from app.models.user import User, UserRole  # noqa: E402
 
 TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL") or settings.DATABASE_URL
 
