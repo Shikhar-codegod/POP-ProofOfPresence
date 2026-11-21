@@ -5,7 +5,9 @@ on:
     branches: [ "main", "master", "develop" ]
   pull_request:
     branches: [ "main", "master", "develop" ]
-
+defaults:
+  run:
+    working-directory: pop
 jobs:
   lint-and-test:
     runs-on: ubuntu-latest
