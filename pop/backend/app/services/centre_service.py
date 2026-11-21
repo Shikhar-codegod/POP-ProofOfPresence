@@ -8,8 +8,6 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.models.attendance_record import AttendanceRecord
-from app.models.camera import Camera
 from app.models.centre import Centre
 from app.models.reading import Reading
 from app.schemas.centre import (

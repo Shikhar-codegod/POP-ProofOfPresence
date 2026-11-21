@@ -2,7 +2,6 @@
 
 from datetime import datetime, timedelta, timezone
 import logging
-from typing import Optional, Tuple
 import uuid
 from fastapi import HTTPException, status
 from jose import JWTError
@@ -20,7 +19,7 @@ from app.core.security import (
     verify_password,
 )
 from app.models.device_key import DeviceKey
-from app.models.user import User, UserRole
+from app.models.user import User
 from app.schemas.device_key import DeviceKeyCreate, DeviceKeyCreatedResponse
 from app.schemas.token import TokenRefreshResponse, TokenResponse, TokenUser
 from app.schemas.user import UserCreate
