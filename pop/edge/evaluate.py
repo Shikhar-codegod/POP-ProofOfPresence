@@ -12,7 +12,6 @@ import argparse
 import csv
 from datetime import datetime, timezone
 import logging
-import math
 import os
 import sys
 from typing import Any, Dict, List, Optional, Tuple

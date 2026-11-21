@@ -55,7 +55,7 @@ jobs:
 
       - name: Run Ruff Lint Check
         run: |
-          ruff check pop/backend pop/edge
+          ruff check --config pop/pyproject.toml pop/backend pop/edge
 
       - name: Install Backend Dependencies
         run: |
@@ -71,8 +71,8 @@ jobs:
           SECRET_KEY: test_secret_key_ci_only_do_not_use_in_production
           ENVIRONMENT: test
         run: |
-          pytest pop/backend/tests -v
+          pytest -c pop/pyproject.toml pop/backend/tests -v
 
       - name: Run Edge Tests
         run: |
-          pytest pop/edge/tests -v
+          pytest -c pop/pyproject.toml pop/edge/tests -v

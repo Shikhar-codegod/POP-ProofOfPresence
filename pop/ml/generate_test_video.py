@@ -9,7 +9,6 @@ Renders an annotated classroom environment with:
 """
 
 import argparse
-from datetime import datetime, timezone
 import logging
 import os
 import cv2

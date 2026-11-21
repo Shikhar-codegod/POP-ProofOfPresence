@@ -1,7 +1,6 @@
 """Pure functional counting module for trainer exclusion and rolling median smoothing."""
 
 from collections import deque
-import math
 from typing import Dict, List, Optional, Tuple
 
 # Type aliases:

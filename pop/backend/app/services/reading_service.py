@@ -9,7 +9,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.models.camera import Camera
-from app.models.centre import Centre
 from app.models.device_key import DeviceKey
 from app.models.reading import Reading
 from app.schemas.reading import ReadingCreate

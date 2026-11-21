@@ -7,10 +7,8 @@ writes telemetry logs, and generates timeline visualizations.
 
 import argparse
 import csv
-from datetime import datetime, timezone
 import logging
 import os
-import sys
 from typing import Any, Dict, List, Optional
 import cv2
 import matplotlib.pyplot as plt

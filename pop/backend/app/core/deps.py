@@ -1,7 +1,7 @@
 """Authentication, authorization, and device validation dependencies."""
 
 from datetime import datetime, timezone
-from typing import Callable, List
+from typing import Callable
 import uuid
 from fastapi import Depends, Header, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer

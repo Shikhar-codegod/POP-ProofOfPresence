@@ -7,8 +7,10 @@ from datetime import datetime, timezone
 import logging
 from typing import Any, Dict
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Request, status
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from app.api.v1.auth import router as auth_router
 from app.api.v1.centres import router as centres_router
@@ -41,6 +43,38 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
+    """Ensure HTTPException responses conform to the POP standard error format."""
+    if isinstance(exc.detail, dict) and "error" in exc.detail:
+        content = exc.detail
+    else:
+        content = {
+            "error": {
+                "code": f"HTTP_{exc.status_code}",
+                "message": str(exc.detail),
+                "details": None,
+            }
+        }
+    return JSONResponse(status_code=exc.status_code, content=content, headers=exc.headers)
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
+    """Format Pydantic validation errors using the POP standard error envelope."""
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        content={
+            "error": {
+                "code": "VALIDATION_ERROR",
+                "message": "Request validation failed.",
+                "details": exc.errors(),
+            }
+        },
+    )
+
 
 # Register v1 routers
 app.include_router(auth_router, prefix="/api/v1")

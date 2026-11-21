@@ -9,15 +9,13 @@ Provisions realistic vocational skilling centres across India with:
 - 2 centres configured with deliberate, high-severity attendance mismatches (ghost attendance).
 """
 
-from datetime import date, datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone
 import logging
 import random
-import sys
 import uuid
-from typing import Dict, List, Tuple
 
-from sqlalchemy import delete, select
-from app.core.database import SyncSessionLocal, sync_engine
+from sqlalchemy import delete
+from app.core.database import SyncSessionLocal
 from app.core.security import generate_raw_device_key, get_password_hash, hash_device_key
 from app.models.attendance_record import AttendanceRecord
 from app.models.camera import Camera
