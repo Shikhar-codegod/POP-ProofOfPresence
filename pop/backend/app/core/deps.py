@@ -1,8 +1,9 @@
 """Authentication, authorization, and device validation dependencies."""
 
-from datetime import datetime, timezone
-from typing import Callable, List
 import uuid
+from collections.abc import Callable
+from datetime import UTC, datetime
+
 from fastapi import Depends, Header, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError
@@ -48,12 +49,12 @@ async def get_current_user(
                 detail={"error": {"code": "INVALID_TOKEN", "message": "Token claims missing user identifier."}},
             )
         user_uuid = uuid.UUID(user_id_str)
-    except (JWTError, ValueError):
+    except (JWTError, ValueError) as err:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail={"error": {"code": "INVALID_TOKEN", "message": "Could not validate credentials or token expired."}},
             headers={"WWW-Authenticate": "Bearer"},
-        )
+        ) from err
 
     query = select(User).where(User.id == user_uuid, User.is_active.is_(True))
     result = await db.execute(query)
@@ -132,7 +133,7 @@ async def validate_device_key(
 
     # Check key expiration if set
     if device_key_obj.expires_at is not None:
-        if datetime.now(timezone.utc) > device_key_obj.expires_at:
+        if datetime.now(UTC) > device_key_obj.expires_at:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail={"error": {"code": "DEVICE_KEY_EXPIRED", "message": "Device key has expired."}},

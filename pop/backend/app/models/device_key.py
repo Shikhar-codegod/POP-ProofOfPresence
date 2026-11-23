@@ -1,8 +1,9 @@
 """DeviceKey model for authenticating edge gateways and CCTV video analytics clients."""
 
-from datetime import datetime
 import uuid
+from datetime import datetime
 from typing import TYPE_CHECKING
+
 from sqlalchemy import Boolean, DateTime, ForeignKey, String
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -10,8 +11,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
 
 if TYPE_CHECKING:
-    from app.models.centre import Centre
     from app.models.camera import Camera
+    from app.models.centre import Centre
 
 
 class DeviceKey(Base, UUIDPrimaryKeyMixin, TimestampMixin):

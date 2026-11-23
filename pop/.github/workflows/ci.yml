@@ -48,31 +48,49 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: 'pip'
 
-      - name: Install Linting Tools
+      - name: Install Linting & Test Tools
         run: |
           python -m pip install --upgrade pip
           pip install ruff pytest
 
       - name: Run Ruff Lint Check
         run: |
-          ruff check pop/backend pop/edge
+          ruff check pop/backend pop/edge --config pyproject.toml
 
       - name: Install Backend Dependencies
         run: |
           pip install -r pop/backend/requirements.txt
 
-      - name: Install Edge Dependencies
-        run: |
-          pip install -r pop/edge/requirements.txt
-
-      - name: Run Backend Tests
+      - name: Run Database Migrations and Seed
         env:
           DATABASE_URL: postgresql+asyncpg://pop_user:pop_password@localhost:5432/pop_db
-          SECRET_KEY: test_secret_key_ci_only_do_not_use_in_production
-          ENVIRONMENT: test
+          DATABASE_SYNC_URL: postgresql://pop_user:pop_password@localhost:5432/pop_db
+          SECRET_KEY: ci_test_secret_key_pop_proof_of_presence_min_32_bytes_long
+          ENVIRONMENT: development
         run: |
-          pytest pop/backend/tests -v
+          cd pop/backend
+          alembic upgrade head
+          python seed.py
+          cd ../..
 
-      - name: Run Edge Tests
+      - name: Run Backend Integration Tests
+        env:
+          DATABASE_URL: postgresql+asyncpg://pop_user:pop_password@localhost:5432/pop_db
+          DATABASE_SYNC_URL: postgresql://pop_user:pop_password@localhost:5432/pop_db
+          REDIS_URL: redis://localhost:6379/0
+          SECRET_KEY: ci_test_secret_key_pop_proof_of_presence_min_32_bytes_long
+          ENVIRONMENT: development
+          PYTHONPATH: pop/backend
+        run: |
+          pytest pop/backend/tests -v -c pop/backend/pytest.ini
+
+      - name: Install Edge Dependencies (CPU PyTorch)
+        run: |
+          pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+          pip install -r pop/edge/requirements.txt
+
+      - name: Run Edge Unit Tests
+        env:
+          PYTHONPATH: pop/edge
         run: |
           pytest pop/edge/tests -v

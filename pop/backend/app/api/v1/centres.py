@@ -1,7 +1,7 @@
 """Skilling centres inspection and dossier API routes."""
 
-from typing import Optional
 import uuid
+
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -16,8 +16,8 @@ router = APIRouter(prefix="/centres", tags=["Centres"])
 
 @router.get("", response_model=CentreListPaginated)
 async def get_centres(
-    state: Optional[str] = Query(None, description="Filter by state (e.g. Haryana, Karnataka)"),
-    is_active: Optional[bool] = Query(True, description="Filter active/inactive centres"),
+    state: str | None = Query(None, description="Filter by state (e.g. Haryana, Karnataka)"),
+    is_active: bool | None = Query(True, description="Filter active/inactive centres"),
     limit: int = Query(50, ge=1, le=100),
     offset: int = Query(0, ge=0),
     _: User = Depends(require_any_authenticated),

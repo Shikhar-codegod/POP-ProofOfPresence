@@ -1,14 +1,14 @@
 """Frame quality evaluation for edge CCTV camera feeds."""
 
 import logging
-from typing import Tuple
+
 import cv2
 import numpy as np
 
 logger = logging.getLogger("pop.edge.quality")
 
 
-def compute_frame_quality(frame: np.ndarray) -> Tuple[float, float, float]:
+def compute_frame_quality(frame: np.ndarray) -> tuple[float, float, float]:
     """Compute normalized image quality metrics from brightness and blur variance.
 
     Args:

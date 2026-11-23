@@ -4,16 +4,17 @@ import os
 import sys
 from logging.config import fileConfig
 
-from alembic import context
 from sqlalchemy import engine_from_config, pool
+
+from alembic import context
 
 # Add application directory to sys.path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from app.core.config import settings
-from app.models.base import Base
 # Ensure all models are registered on Base.metadata
 import app.models  # noqa: F401
+from app.core.config import settings
+from app.models.base import Base
 
 config = context.config
 

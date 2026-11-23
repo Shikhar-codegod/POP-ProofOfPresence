@@ -5,21 +5,20 @@ computes smoothed rolling median headcount, measures image quality scores,
 writes telemetry logs, and generates timeline visualizations.
 """
 
+
 import argparse
 import csv
-from datetime import datetime, timezone
 import logging
 import os
-import sys
-from typing import Any, Dict, List, Optional
+from typing import Any
+
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 import yaml
-
 from capture import sample_video_frames
 from client import EdgeBackendClient
-from counter import RollingMedianFilter, compute_headcount, is_point_in_zone, get_box_center
+from counter import RollingMedianFilter, compute_headcount, get_box_center, is_point_in_zone
 from detector import YOLO11nDetector
 from quality import compute_frame_quality
 
@@ -30,18 +29,18 @@ logging.basicConfig(
 logger = logging.getLogger("pop.edge.runner")
 
 
-def load_config(config_path: str) -> Dict[str, Any]:
+def load_config(config_path: str) -> dict[str, Any]:
     """Load and parse YAML edge configuration file."""
     if not os.path.exists(config_path):
         raise FileNotFoundError(f"Configuration file not found at: {config_path}")
-    with open(config_path, "r", encoding="utf-8") as f:
+    with open(config_path, encoding="utf-8") as f:
         config = yaml.safe_load(f)
     logger.info(f"Loaded edge configuration from: {config_path}")
     return config
 
 
 def generate_timeline_plot(
-    records: List[Dict[str, Any]],
+    records: list[dict[str, Any]],
     output_path: str,
 ) -> None:
     """Generate and save matplotlib timeline plot comparing raw vs rolling median headcount.
@@ -77,7 +76,7 @@ def generate_timeline_plot(
 
 
 def write_readings_csv(
-    records: List[Dict[str, Any]],
+    records: list[dict[str, Any]],
     output_path: str,
 ) -> None:
     """Write telemetry samples to CSV file."""
@@ -101,8 +100,8 @@ def write_readings_csv(
 
 def annotate_frame(
     frame: np.ndarray,
-    boxes: List[Any],
-    zone: Optional[Dict[str, float]],
+    boxes: list[Any],
+    zone: dict[str, float] | None,
     raw_count: int,
     stable_count: int,
     quality_score: float,
@@ -156,10 +155,10 @@ def annotate_frame(
 
 def run_pipeline(
     config_path: str = "pop/edge/config.yaml",
-    video_path: Optional[str] = None,
+    video_path: str | None = None,
     no_post: bool = True,
-    save_video_override: Optional[bool] = None,
-) -> List[Dict[str, Any]]:
+    save_video_override: bool | None = None,
+) -> list[dict[str, Any]]:
     """Execute complete edge person detection and counting pipeline.
 
     Args:
@@ -225,7 +224,7 @@ def run_pipeline(
         logger.info(f"Initialized EdgeBackendClient pointing to: {backend_client.backend_url}")
 
     video_writer = None
-    processed_records: List[Dict[str, Any]] = []
+    processed_records: list[dict[str, Any]] = []
 
     logger.info("==========================================================")
     logger.info(" STARTING POP EDGE COUNTING PIPELINE")

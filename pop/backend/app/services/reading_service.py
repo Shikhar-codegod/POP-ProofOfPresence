@@ -1,15 +1,14 @@
 """Reading ingestion service handling validation, future timestamp checks, and idempotent inserts."""
 
-from datetime import datetime, timedelta, timezone
 import logging
-from typing import Tuple
+from datetime import UTC, datetime, timedelta
+
 from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.models.camera import Camera
-from app.models.centre import Centre
 from app.models.device_key import DeviceKey
 from app.models.reading import Reading
 from app.schemas.reading import ReadingCreate
@@ -21,7 +20,7 @@ async def ingest_reading(
     db: AsyncSession,
     reading_in: ReadingCreate,
     device_key: DeviceKey,
-) -> Tuple[Reading, bool]:
+) -> tuple[Reading, bool]:
     """Validate and ingest an edge reading with strict idempotency and skew checks.
 
     Args:
@@ -65,9 +64,9 @@ async def ingest_reading(
     # 2. Normalize and validate timestamp
     reading_ts = reading_in.timestamp
     if reading_ts.tzinfo is None:
-        reading_ts = reading_ts.replace(tzinfo=timezone.utc)
+        reading_ts = reading_ts.replace(tzinfo=UTC)
 
-    now_utc = datetime.now(timezone.utc)
+    now_utc = datetime.now(UTC)
     max_tolerated_future = now_utc + timedelta(seconds=settings.MAX_FUTURE_TIMESTAMP_SKEW_SECONDS)
     if reading_ts > max_tolerated_future:
         logger.warning(

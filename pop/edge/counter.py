@@ -1,22 +1,20 @@
 """Pure functional counting module for trainer exclusion and rolling median smoothing."""
 
 from collections import deque
-import math
-from typing import Dict, List, Optional, Tuple
 
 # Type aliases:
 # NormalizedBBox: (x1, y1, x2, y2, confidence)
-NormalizedBBox = Tuple[float, float, float, float, float]
-ZoneRect = Dict[str, float]
+NormalizedBBox = tuple[float, float, float, float, float]
+ZoneRect = dict[str, float]
 
 
-def get_box_center(bbox: NormalizedBBox) -> Tuple[float, float]:
+def get_box_center(bbox: NormalizedBBox) -> tuple[float, float]:
     """Calculate the normalized (cx, cy) center coordinates of a bounding box."""
     x1, y1, x2, y2, _ = bbox
     return (x1 + x2) / 2.0, (y1 + y2) / 2.0
 
 
-def is_point_in_zone(point: Tuple[float, float], zone: ZoneRect) -> bool:
+def is_point_in_zone(point: tuple[float, float], zone: ZoneRect) -> bool:
     """Determine whether a 2D normalized point (cx, cy) falls within a rectangular zone.
 
     Args:
@@ -34,10 +32,10 @@ def is_point_in_zone(point: Tuple[float, float], zone: ZoneRect) -> bool:
 
 
 def filter_trainer_boxes(
-    boxes: List[NormalizedBBox],
+    boxes: list[NormalizedBBox],
     mode: str = "zone",
-    zone: Optional[ZoneRect] = None,
-) -> List[NormalizedBBox]:
+    zone: ZoneRect | None = None,
+) -> list[NormalizedBBox]:
     """Filter out trainer detections according to the chosen exclusion policy.
 
     Args:
@@ -63,9 +61,9 @@ def filter_trainer_boxes(
 
 
 def compute_headcount(
-    boxes: List[NormalizedBBox],
+    boxes: list[NormalizedBBox],
     mode: str = "zone",
-    zone: Optional[ZoneRect] = None,
+    zone: ZoneRect | None = None,
 ) -> int:
     """Calculate instantaneous headcount after applying trainer exclusion policy.
 
@@ -90,7 +88,7 @@ def compute_headcount(
     raise ValueError(f"Invalid trainer exclusion mode: '{mode}'. Allowed: 'zone', 'subtract_one', 'none'")
 
 
-def compute_rolling_median(history: List[int], window_k: int) -> int:
+def compute_rolling_median(history: list[int], window_k: int) -> int:
     """Calculate the integer median count across the most recent K elements.
 
     Args:

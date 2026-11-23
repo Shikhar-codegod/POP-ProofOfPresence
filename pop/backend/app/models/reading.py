@@ -1,17 +1,19 @@
 """Reading model representing aggregated headcount telemetry from edge CCTV nodes."""
 
-from datetime import datetime
-from typing import Any, Dict, TYPE_CHECKING
 import uuid
-from sqlalchemy import DateTime, Float, ForeignKey, Index, Integer, JSON, UniqueConstraint
-from sqlalchemy.dialects.postgresql import JSONB, UUID as PG_UUID
+from datetime import datetime
+from typing import TYPE_CHECKING, Any
+
+from sqlalchemy import JSON, DateTime, Float, ForeignKey, Index, Integer, UniqueConstraint
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
 
 if TYPE_CHECKING:
-    from app.models.centre import Centre
     from app.models.camera import Camera
+    from app.models.centre import Centre
 
 
 class Reading(Base, UUIDPrimaryKeyMixin, TimestampMixin):
@@ -55,7 +57,7 @@ class Reading(Base, UUIDPrimaryKeyMixin, TimestampMixin):
         nullable=False,
         comment="Rolling median filtered headcount after trainer exclusion",
     )
-    equipment: Mapped[Dict[str, Any]] = mapped_column(
+    equipment: Mapped[dict[str, Any]] = mapped_column(
         JSON().with_variant(JSONB, "postgresql"),
         default=dict,
         nullable=False,

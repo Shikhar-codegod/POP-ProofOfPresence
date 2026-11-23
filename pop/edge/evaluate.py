@@ -10,12 +10,11 @@ Computes:
 
 import argparse
 import csv
-from datetime import datetime, timezone
 import logging
-import math
 import os
 import sys
-from typing import Any, Dict, List, Optional, Tuple
+from datetime import UTC, datetime
+from typing import Any
 
 logging.basicConfig(
     level=logging.INFO,
@@ -24,13 +23,13 @@ logging.basicConfig(
 logger = logging.getLogger("pop.edge.evaluate")
 
 
-def load_ground_truth(csv_path: str) -> List[Dict[str, Any]]:
+def load_ground_truth(csv_path: str) -> list[dict[str, Any]]:
     """Load ground truth annotations from CSV."""
     if not os.path.exists(csv_path):
         raise FileNotFoundError(f"Ground truth file not found at: {csv_path}")
 
     records = []
-    with open(csv_path, "r", encoding="utf-8") as f:
+    with open(csv_path, encoding="utf-8") as f:
         reader = csv.DictReader(f)
         for row in reader:
             try:
@@ -48,13 +47,13 @@ def load_ground_truth(csv_path: str) -> List[Dict[str, Any]]:
     return records
 
 
-def load_predictions(csv_path: str) -> List[Dict[str, Any]]:
+def load_predictions(csv_path: str) -> list[dict[str, Any]]:
     """Load edge inference predictions from CSV."""
     if not os.path.exists(csv_path):
         raise FileNotFoundError(f"Predictions CSV not found at: {csv_path}")
 
     records = []
-    with open(csv_path, "r", encoding="utf-8") as f:
+    with open(csv_path, encoding="utf-8") as f:
         reader = csv.DictReader(f)
         for row in reader:
             try:
@@ -73,11 +72,11 @@ def load_predictions(csv_path: str) -> List[Dict[str, Any]]:
 
 
 def join_by_nearest_timestamp(
-    gt_records: List[Dict[str, Any]],
-    pred_records: List[Dict[str, Any]],
+    gt_records: list[dict[str, Any]],
+    pred_records: list[dict[str, Any]],
     max_tolerance_sec: float = 2.0,
-    video_id_filter: Optional[str] = None,
-) -> List[Dict[str, Any]]:
+    video_id_filter: str | None = None,
+) -> list[dict[str, Any]]:
     """Join ground truth annotations with predicted stable counts by nearest video timestamp.
 
     Args:
@@ -132,7 +131,7 @@ def join_by_nearest_timestamp(
     return matched
 
 
-def compute_metrics(samples: List[Dict[str, Any]]) -> Dict[str, Any]:
+def compute_metrics(samples: list[dict[str, Any]]) -> dict[str, Any]:
     """Compute aggregated statistical metrics from joined evaluation samples."""
     n = len(samples)
     if n == 0:
@@ -165,9 +164,9 @@ def compute_metrics(samples: List[Dict[str, Any]]) -> Dict[str, Any]:
     }
 
 
-def compute_scenario_breakdown(samples: List[Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
+def compute_scenario_breakdown(samples: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
     """Group evaluation records by scenario and compute subset metrics."""
-    groups: Dict[str, List[Dict[str, Any]]] = {}
+    groups: dict[str, list[dict[str, Any]]] = {}
     for s in samples:
         sc = s["scenario"]
         groups.setdefault(sc, []).append(s)
@@ -180,12 +179,12 @@ def compute_scenario_breakdown(samples: List[Dict[str, Any]]) -> Dict[str, Dict[
 
 
 def format_markdown_report(
-    overall: Dict[str, Any],
-    breakdown: Dict[str, Dict[str, Any]],
-    samples: List[Dict[str, Any]],
+    overall: dict[str, Any],
+    breakdown: dict[str, dict[str, Any]],
+    samples: list[dict[str, Any]],
 ) -> str:
     """Render comprehensive markdown report table."""
-    now_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+    now_str = datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S UTC")
 
     lines = [
         "# POP Edge Analytics — Accuracy Evaluation Report",
@@ -244,8 +243,8 @@ def evaluate(
     predictions_path: str,
     ground_truth_path: str,
     output_markdown_path: str,
-    video_id_filter: Optional[str] = None,
-) -> Tuple[Dict[str, Any], str]:
+    video_id_filter: str | None = None,
+) -> tuple[dict[str, Any], str]:
     """Execute evaluation comparison and generate markdown report."""
     gt_records = load_ground_truth(ground_truth_path)
     pred_records = load_predictions(predictions_path)

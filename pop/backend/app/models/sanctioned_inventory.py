@@ -1,8 +1,9 @@
 """SanctionedInventory model representing officially approved training lab infrastructure."""
 
+import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
-import uuid
+
 from sqlalchemy import DateTime, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship

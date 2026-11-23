@@ -9,15 +9,14 @@ Provisions realistic vocational skilling centres across India with:
 - 2 centres configured with deliberate, high-severity attendance mismatches (ghost attendance).
 """
 
-from datetime import date, datetime, timedelta, timezone
 import logging
 import random
-import sys
 import uuid
-from typing import Dict, List, Tuple
+from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import delete, select
-from app.core.database import SyncSessionLocal, sync_engine
+from sqlalchemy import delete
+
+from app.core.database import SyncSessionLocal
 from app.core.security import generate_raw_device_key, get_password_hash, hash_device_key
 from app.models.attendance_record import AttendanceRecord
 from app.models.camera import Camera
@@ -177,7 +176,7 @@ def seed_database() -> None:
         ]
 
         device_keys_summary = []
-        today = datetime.now(timezone.utc).date()
+        today = datetime.now(UTC).date()
 
         for cdata in centres_data:
             centre = Centre(
@@ -198,7 +197,7 @@ def seed_database() -> None:
                     centre_id=centre.id,
                     item_type=item_type,
                     sanctioned_quantity=qty,
-                    last_verified_at=datetime.now(timezone.utc) - timedelta(days=random.randint(1, 10)),
+                    last_verified_at=datetime.now(UTC) - timedelta(days=random.randint(1, 10)),
                 )
                 session.add(inv)
 
@@ -225,7 +224,7 @@ def seed_database() -> None:
                     centre_id=centre.id,
                     camera_id=cam.id,
                     is_active=True,
-                    expires_at=datetime.now(timezone.utc) + timedelta(days=365),
+                    expires_at=datetime.now(UTC) + timedelta(days=365),
                 )
                 session.add(dev_key)
 
@@ -272,7 +271,7 @@ def seed_database() -> None:
                         raw_sample = sample_count + random.choice([0, 1])  # Raw might catch a passerby
                         reading_dt = datetime(
                             rec_date.year, rec_date.month, rec_date.day,
-                            hour, minute, 0, tzinfo=timezone.utc
+                            hour, minute, 0, tzinfo=UTC
                         )
                         reading = Reading(
                             centre_id=centre.id,

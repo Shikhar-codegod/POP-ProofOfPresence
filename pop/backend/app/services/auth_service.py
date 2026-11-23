@@ -1,9 +1,9 @@
 """Authentication and credential lifecycle services."""
 
-from datetime import datetime, timedelta, timezone
 import logging
-from typing import Optional, Tuple
 import uuid
+from datetime import UTC, datetime, timedelta
+
 from fastapi import HTTPException, status
 from jose import JWTError
 from sqlalchemy import select
@@ -20,7 +20,7 @@ from app.core.security import (
     verify_password,
 )
 from app.models.device_key import DeviceKey
-from app.models.user import User, UserRole
+from app.models.user import User
 from app.schemas.device_key import DeviceKeyCreate, DeviceKeyCreatedResponse
 from app.schemas.token import TokenRefreshResponse, TokenResponse, TokenUser
 from app.schemas.user import UserCreate
@@ -94,11 +94,11 @@ async def refresh_user_token(
         if not user_id_str:
             raise ValueError("Missing user_id")
         user_uuid = uuid.UUID(user_id_str)
-    except (JWTError, ValueError):
+    except (JWTError, ValueError) as err:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail={"error": {"code": "INVALID_REFRESH_TOKEN", "message": "The refresh token is invalid or has expired."}},
-        )
+        ) from err
 
     query = select(User).where(User.id == user_uuid, User.is_active.is_(True))
     result = await db.execute(query)
@@ -169,7 +169,7 @@ async def provision_device_key(
 
     expires_at = None
     if device_in.expires_in_days:
-        expires_at = datetime.now(timezone.utc) + timedelta(days=device_in.expires_in_days)
+        expires_at = datetime.now(UTC) + timedelta(days=device_in.expires_in_days)
 
     device_key_obj = DeviceKey(
         key_hash=key_hash,

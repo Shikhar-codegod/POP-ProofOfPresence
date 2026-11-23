@@ -1,15 +1,15 @@
 """Person detection engine wrapping YOLO nano with swappable detector interface."""
 
-from abc import ABC, abstractmethod
 import logging
-from typing import List, Tuple
+from abc import ABC, abstractmethod
+
 import numpy as np
 
 logger = logging.getLogger("pop.edge.detector")
 
 # Type alias: (x1_norm, y1_norm, x2_norm, y2_norm, confidence)
 # All coordinates are normalized in range [0.0, 1.0] relative to frame dimensions.
-NormalizedBBox = Tuple[float, float, float, float, float]
+NormalizedBBox = tuple[float, float, float, float, float]
 
 
 class BasePersonDetector(ABC):
@@ -19,7 +19,7 @@ class BasePersonDetector(ABC):
     """
 
     @abstractmethod
-    def detect(self, frame: np.ndarray) -> List[NormalizedBBox]:
+    def detect(self, frame: np.ndarray) -> list[NormalizedBBox]:
         """Detect persons in the given video frame.
 
         Args:
@@ -65,7 +65,7 @@ class YOLO11nDetector(BasePersonDetector):
             logger.error(f"Failed to load YOLO model: {exc}")
             raise
 
-    def detect(self, frame: np.ndarray) -> List[NormalizedBBox]:
+    def detect(self, frame: np.ndarray) -> list[NormalizedBBox]:
         """Execute inference on frame and extract normalized person bounding boxes."""
         if frame is None or frame.size == 0:
             return []
@@ -82,7 +82,7 @@ class YOLO11nDetector(BasePersonDetector):
             verbose=False,
         )
 
-        detected_boxes: List[NormalizedBBox] = []
+        detected_boxes: list[NormalizedBBox] = []
         if not results or len(results) == 0:
             return detected_boxes
 
@@ -94,7 +94,7 @@ class YOLO11nDetector(BasePersonDetector):
         coords = boxes.xyxy.cpu().numpy()
         confs = boxes.conf.cpu().numpy()
 
-        for (x1, y1, x2, y2), conf in zip(coords, confs):
+        for (x1, y1, x2, y2), conf in zip(coords, confs, strict=False):
             # Clamp and normalize coordinates between 0.0 and 1.0
             x1_norm = max(0.0, min(1.0, float(x1) / w))
             y1_norm = max(0.0, min(1.0, float(y1) / h))

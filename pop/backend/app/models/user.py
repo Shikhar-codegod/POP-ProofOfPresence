@@ -1,6 +1,7 @@
 """User model and role definitions for authentication and authorization."""
 
 import enum
+
 from sqlalchemy import Boolean, Enum, String
 from sqlalchemy.orm import Mapped, mapped_column
 

@@ -1,6 +1,7 @@
 """SQLAlchemy 2.0 asynchronous and synchronous database engine and session managers."""
 
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
+
 from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
