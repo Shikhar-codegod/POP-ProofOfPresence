@@ -14,7 +14,6 @@ import random
 import uuid
 from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import delete
 from app.core.database import SyncSessionLocal
 from app.core.security import generate_raw_device_key, get_password_hash, hash_device_key
 from app.models.attendance_record import AttendanceRecord
@@ -24,6 +23,7 @@ from app.models.device_key import DeviceKey
 from app.models.reading import Reading
 from app.models.sanctioned_inventory import SanctionedInventory
 from app.models.user import User, UserRole
+from sqlalchemy import delete
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("pop.seed")

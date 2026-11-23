@@ -1,13 +1,14 @@
 """Pytest fixtures for POP FastAPI backend API testing with PostgreSQL."""
 
-from datetime import datetime, timedelta, timezone
 import os
-from pathlib import Path
 import sys
-from typing import AsyncGenerator, Dict, Any
+from collections.abc import AsyncGenerator
+from datetime import UTC, datetime, timedelta
+from pathlib import Path
+from typing import Any
 
-from httpx import ASGITransport, AsyncClient
 import pytest_asyncio
+from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
 
@@ -82,7 +83,7 @@ async def client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
 
 
 @pytest_asyncio.fixture
-async def test_fixtures(db_session: AsyncSession) -> Dict[str, Any]:
+async def test_fixtures(db_session: AsyncSession) -> dict[str, Any]:
     """Seed users (admin, inspector, viewer), a centre, a camera, and an active device key."""
     admin = User(
         email="admin@test.pop.gov.in",
@@ -133,7 +134,7 @@ async def test_fixtures(db_session: AsyncSession) -> Dict[str, Any]:
         centre_id=centre.id,
         camera_id=camera.id,
         is_active=True,
-        expires_at=datetime.now(timezone.utc) + timedelta(days=30),
+        expires_at=datetime.now(UTC) + timedelta(days=30),
     )
     db_session.add(device_key)
     await db_session.commit()
@@ -158,24 +159,24 @@ async def test_fixtures(db_session: AsyncSession) -> Dict[str, Any]:
     }
 
 @pytest_asyncio.fixture
-async def inspector_headers(client: AsyncClient, test_fixtures: Dict[str, Any]) -> Dict[str, str]:
+async def inspector_headers(client: AsyncClient, test_fixtures: dict[str, Any]) -> dict[str, str]:
     """Return Authorization headers for the seeded inspector test user."""
-    return {"Authorization": f"******'inspector_token']}"}
+    return {"Authorization": "Bearer " + test_fixtures["inspector_token"]}
 
 
 @pytest_asyncio.fixture
-async def admin_headers(client: AsyncClient, test_fixtures: Dict[str, Any]) -> Dict[str, str]:
+async def admin_headers(client: AsyncClient, test_fixtures: dict[str, Any]) -> dict[str, str]:
     """Return Authorization headers for the seeded admin test user."""
-    return {"Authorization": f"******'admin_token']}"}
+    return {"Authorization": "Bearer " + test_fixtures["admin_token"]}
 
 
 @pytest_asyncio.fixture
-async def viewer_headers(client: AsyncClient, test_fixtures: Dict[str, Any]) -> Dict[str, str]:
+async def viewer_headers(client: AsyncClient, test_fixtures: dict[str, Any]) -> dict[str, str]:
     """Return Authorization headers for the seeded viewer test user."""
-    return {"Authorization": f"******'viewer_token']}"}
+    return {"Authorization": "Bearer " + test_fixtures["viewer_token"]}
 
 
 @pytest_asyncio.fixture
-async def device_key_headers(test_fixtures: Dict[str, Any]) -> Dict[str, str]:
+async def device_key_headers(test_fixtures: dict[str, Any]) -> dict[str, str]:
     """Return the active test edge device key header."""
     return {"X-Device-Key": test_fixtures["device_key"]}
