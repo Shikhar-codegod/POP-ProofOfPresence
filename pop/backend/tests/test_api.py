@@ -58,7 +58,7 @@ async def test_valid_reading_ingestion_and_centre_retrieval(
     )
     assert centre_resp.status_code == 200
     dossier = centre_resp.json()
-    assert len(dossier["cameras"]) == 1
+    assert len(dossier["cameras"]) == 2
     assert dossier["cameras"][0]["latest_reading"]["stable_count"] == 16
 
     # Verify reading shows up on GET /api/v1/centres list
@@ -68,8 +68,9 @@ async def test_valid_reading_ingestion_and_centre_retrieval(
     )
     assert list_resp.status_code == 200
     list_body = list_resp.json()
-    assert list_body["total"] == 1
-    assert list_body["items"][0]["latest_reading"]["stable_count"] == 16
+    assert list_body["total"] == 5
+    gurugram = next(item for item in list_body["items"] if item["code"] == "HR-GGN-0104")
+    assert gurugram["latest_reading"]["stable_count"] == 16
 
 
 @pytest.mark.asyncio
