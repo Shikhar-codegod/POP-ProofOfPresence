@@ -15,7 +15,6 @@ import uuid
 from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import delete
-
 from app.core.database import SyncSessionLocal
 from app.core.security import generate_raw_device_key, get_password_hash, hash_device_key
 from app.models.attendance_record import AttendanceRecord
