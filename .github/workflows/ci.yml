@@ -64,7 +64,7 @@ jobs:
       - name: Run Database Migrations and Seed
         env:
           DATABASE_URL: postgresql+asyncpg://pop_user:pop_password@localhost:5432/pop_db
-          DATABASE_SYNC_URL: postgresql://pop_user:pop_password@localhost:5432/pop_db
+          DATABASE_SYNC_URL: postgresql+psycopg2://pop_user:pop_password@localhost:5432/pop_db
           SECRET_KEY: ci_test_secret_key_pop_proof_of_presence_min_32_bytes_long
           ENVIRONMENT: development
         run: |
@@ -76,7 +76,7 @@ jobs:
       - name: Run Backend Integration Tests
         env:
           DATABASE_URL: postgresql+asyncpg://pop_user:pop_password@localhost:5432/pop_db
-          DATABASE_SYNC_URL: postgresql://pop_user:pop_password@localhost:5432/pop_db
+          DATABASE_SYNC_URL: postgresql+psycopg2://pop_user:pop_password@localhost:5432/pop_db
           REDIS_URL: redis://localhost:6379/0
           SECRET_KEY: ci_test_secret_key_pop_proof_of_presence_min_32_bytes_long
           ENVIRONMENT: development
