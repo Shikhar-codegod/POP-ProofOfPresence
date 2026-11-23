@@ -49,13 +49,17 @@ app.add_middleware(
 async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
     """Ensure HTTPException responses conform to the POP standard error format."""
     if isinstance(exc.detail, dict) and "error" in exc.detail:
-        content = exc.detail
+        content = {"error": exc.detail["error"], "detail": exc.detail}
     else:
+        error = {
+            "code": f"HTTP_{exc.status_code}",
+            "message": str(exc.detail),
+            "details": None,
+        }
         content = {
-            "error": {
-                "code": f"HTTP_{exc.status_code}",
-                "message": str(exc.detail),
-                "details": None,
+            "error": error,
+            "detail": {
+                "error": error,
             }
         }
     return JSONResponse(status_code=exc.status_code, content=content, headers=exc.headers)
