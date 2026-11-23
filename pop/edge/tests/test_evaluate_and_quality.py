@@ -2,7 +2,6 @@
 
 import numpy as np
 import pytest
-
 from capture import sample_rtsp_stream
 from evaluate import compute_metrics, compute_scenario_breakdown, join_by_nearest_timestamp
 from quality import compute_frame_quality

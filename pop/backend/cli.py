@@ -5,14 +5,13 @@ import logging
 import sys
 import uuid
 
-from sqlalchemy import select
-
 from app.core.database import SyncSessionLocal
 from app.core.security import generate_raw_device_key, get_password_hash, hash_device_key
 from app.models.camera import Camera
 from app.models.centre import Centre
 from app.models.device_key import DeviceKey
 from app.models.user import User, UserRole
+from sqlalchemy import select
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger("pop.cli")
