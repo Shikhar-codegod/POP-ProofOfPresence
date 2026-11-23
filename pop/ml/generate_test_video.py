@@ -11,6 +11,7 @@ Renders an annotated classroom environment with:
 import argparse
 import logging
 import os
+
 import cv2
 import numpy as np
 

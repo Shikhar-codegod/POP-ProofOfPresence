@@ -2,7 +2,7 @@
 
 import logging
 from collections.abc import Generator
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import cv2
 import numpy as np
@@ -48,9 +48,9 @@ def sample_video_frames(
     duration_sec = total_frames / fps if fps > 0 else 0.0
 
     if base_timestamp is None:
-        base_timestamp = datetime.now(UTC)
+        base_timestamp = datetime.now(timezone.utc)
     elif base_timestamp.tzinfo is None:
-        base_timestamp = base_timestamp.replace(tzinfo=UTC)
+        base_timestamp = base_timestamp.replace(tzinfo=timezone.utc)
 
     logger.info(
         f"Initialized video capture: '{video_path}' | FPS: {fps:.2f} | "

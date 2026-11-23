@@ -13,7 +13,7 @@ import csv
 import logging
 import os
 import sys
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from typing import Any
 
 logging.basicConfig(
@@ -184,7 +184,7 @@ def format_markdown_report(
     samples: list[dict[str, Any]],
 ) -> str:
     """Render comprehensive markdown report table."""
-    now_str = datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S UTC")
+    now_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
 
     lines = [
         "# POP Edge Analytics — Accuracy Evaluation Report",

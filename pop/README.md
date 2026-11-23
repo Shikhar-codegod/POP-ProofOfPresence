@@ -106,7 +106,7 @@ Copy one of the printed `centre_id`, `camera_id`, and `X-Device-Key` values into
 
 ### 5. Run the Edge Script on a Sample Video
 
-Install edge dependencies (Python 3.11 recommended):
+Install edge dependencies with Python 3.10 or newer (Python >=3.10 is supported):
 
 ```bash
 cd pop/edge

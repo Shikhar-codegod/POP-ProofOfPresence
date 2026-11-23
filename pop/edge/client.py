@@ -2,7 +2,7 @@
 
 import logging
 import time
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from typing import Any
 
 import requests
@@ -67,9 +67,9 @@ class EdgeBackendClient:
         """Construct validated JSON payload conforming to POP API Contract v1.0."""
         # Ensure UTC timezone formatting
         if timestamp.tzinfo is None:
-            ts_utc = timestamp.replace(tzinfo=UTC)
+            ts_utc = timestamp.replace(tzinfo=timezone.utc)
         else:
-            ts_utc = timestamp.astimezone(UTC)
+            ts_utc = timestamp.astimezone(timezone.utc)
 
         return {
             "centre_id": self.centre_id,
