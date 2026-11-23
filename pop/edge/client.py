@@ -1,9 +1,10 @@
 """HTTP telemetry client for edge gateways to transmit readings to POP backend with backoff retries."""
 
-from datetime import datetime, timezone
 import logging
 import time
-from typing import Any, Dict, Optional
+from datetime import UTC, datetime
+from typing import Any
+
 import requests
 
 logger = logging.getLogger("pop.edge.client")
@@ -61,14 +62,14 @@ class EdgeBackendClient:
         raw_count: int,
         stable_count: int,
         frame_quality: float,
-        equipment: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        equipment: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """Construct validated JSON payload conforming to POP API Contract v1.0."""
         # Ensure UTC timezone formatting
         if timestamp.tzinfo is None:
-            ts_utc = timestamp.replace(tzinfo=timezone.utc)
+            ts_utc = timestamp.replace(tzinfo=UTC)
         else:
-            ts_utc = timestamp.astimezone(timezone.utc)
+            ts_utc = timestamp.astimezone(UTC)
 
         return {
             "centre_id": self.centre_id,
@@ -86,8 +87,8 @@ class EdgeBackendClient:
         raw_count: int,
         stable_count: int,
         frame_quality: float,
-        equipment: Optional[Dict[str, Any]] = None,
-    ) -> Optional[Dict[str, Any]]:
+        equipment: dict[str, Any] | None = None,
+    ) -> dict[str, Any] | None:
         """Dispatch reading payload to backend with exponential backoff retry.
 
         Args:

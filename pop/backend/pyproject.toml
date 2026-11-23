@@ -1,0 +1,30 @@
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+exclude = [
+    ".git",
+    ".venv",
+    "__pycache__",
+    "alembic/versions",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+]
+ignore = [
+    "E501",   # Line length
+    "B008",   # Do not perform function calls in argument defaults (FastAPI Depends)
+    "EXE002", # File is executable but no shebang (Windows git attribute)
+    "UP042",  # str, enum.Enum for SQLAlchemy compatibility
+]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]
+"app/models/__init__.py" = ["F401"]
+"alembic/env.py" = ["F401"]

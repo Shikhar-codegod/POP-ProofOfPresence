@@ -37,14 +37,14 @@ counting:
 # Ingestion Backend Target
 backend:
   # URL of the central POP backend ingestion endpoint
-  url: "http://localhost:8000/api/v1/readings"
+  url: "http://pop_backend:8000/api/v1/readings"
   
   # Plaintext API key provisioned for this camera node (seed prints this)
-  device_key: "devkey_replace_with_camera_key"
+  device_key: "devkey_WHiHL4Krl-cPFy0F2ReMFKOlMAhuvLaesMDPxpb2ZLY"
   
   # Target facility and camera UUID identifiers
   centre_id: "a1000000-0000-4000-8000-000000000001"
-  camera_id: "replace_with_camera_uuid"
+  camera_id: "fd38f22b-3065-4f94-a354-0255739d54d0"
   
   # Network retry configuration
   max_retries: 4

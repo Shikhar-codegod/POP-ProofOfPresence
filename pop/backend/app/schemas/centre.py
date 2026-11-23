@@ -1,8 +1,8 @@
 """Schemas for skilling centres, cameras, sanctioned inventory, and attendance records."""
 
-from datetime import date, datetime
-from typing import List, Optional
 import uuid
+from datetime import date, datetime
+
 from pydantic import BaseModel, Field
 
 from app.schemas.reading import LatestReadingSummary
@@ -14,7 +14,7 @@ class SanctionedInventoryResponse(BaseModel):
     id: uuid.UUID
     item_type: str
     sanctioned_quantity: int
-    last_verified_at: Optional[datetime]
+    last_verified_at: datetime | None
 
     model_config = {"from_attributes": True}
 
@@ -36,10 +36,10 @@ class CameraResponse(BaseModel):
 
     id: uuid.UUID
     name: str
-    rtsp_url: Optional[str]
-    location_description: Optional[str]
+    rtsp_url: str | None
+    location_description: str | None
     is_active: bool
-    latest_reading: Optional[LatestReadingSummary] = None
+    latest_reading: LatestReadingSummary | None = None
 
     model_config = {"from_attributes": True}
 
@@ -52,11 +52,11 @@ class CentreListItemResponse(BaseModel):
     code: str
     state: str
     district: str
-    latitude: Optional[float]
-    longitude: Optional[float]
+    latitude: float | None
+    longitude: float | None
     is_active: bool
     camera_count: int
-    latest_reading: Optional[LatestReadingSummary] = None
+    latest_reading: LatestReadingSummary | None = None
 
     model_config = {"from_attributes": True}
 
@@ -69,13 +69,13 @@ class CentreDetailResponse(BaseModel):
     code: str
     state: str
     district: str
-    latitude: Optional[float]
-    longitude: Optional[float]
+    latitude: float | None
+    longitude: float | None
     is_active: bool
     created_at: datetime
-    cameras: List[CameraResponse] = Field(default_factory=list)
-    sanctioned_inventory: List[SanctionedInventoryResponse] = Field(default_factory=list)
-    latest_official_attendance: Optional[AttendanceRecordResponse] = None
+    cameras: list[CameraResponse] = Field(default_factory=list)
+    sanctioned_inventory: list[SanctionedInventoryResponse] = Field(default_factory=list)
+    latest_official_attendance: AttendanceRecordResponse | None = None
 
     model_config = {"from_attributes": True}
 
@@ -83,5 +83,5 @@ class CentreDetailResponse(BaseModel):
 class CentreListPaginated(BaseModel):
     """Paginated list envelope for skilling centres."""
 
-    items: List[CentreListItemResponse]
+    items: list[CentreListItemResponse]
     total: int

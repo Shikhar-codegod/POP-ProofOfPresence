@@ -3,10 +3,10 @@
 import argparse
 import logging
 import sys
-from typing import Optional
 import uuid
 
 from sqlalchemy import select
+
 from app.core.database import SyncSessionLocal
 from app.core.security import generate_raw_device_key, get_password_hash, hash_device_key
 from app.models.camera import Camera
@@ -52,7 +52,7 @@ def create_user_cmd(email: str, password: str, role_str: str) -> None:
         print("========================================================\n")
 
 
-def create_device_key_cmd(name: str, centre_code: Optional[str] = None, camera_id_str: Optional[str] = None) -> None:
+def create_device_key_cmd(name: str, centre_code: str | None = None, camera_id_str: str | None = None) -> None:
     """Provision a new edge device key and print the raw secret only once."""
     with SyncSessionLocal() as session:
         centre_id = None

@@ -1,9 +1,10 @@
 """Security utilities for password hashing, device key generation, and JWT handling."""
 
-from datetime import datetime, timedelta, timezone
 import hashlib
 import secrets
-from typing import Any, Dict, Optional
+from datetime import UTC, datetime, timedelta
+from typing import Any
+
 from jose import jwt
 from passlib.context import CryptContext
 
@@ -34,12 +35,12 @@ def hash_device_key(raw_key: str) -> str:
 
 
 def create_access_token(
-    data: Dict[str, Any],
-    expires_delta: Optional[timedelta] = None,
+    data: dict[str, Any],
+    expires_delta: timedelta | None = None,
 ) -> str:
     """Encode JWT access token with user claims and expiration."""
     to_encode = data.copy()
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     if expires_delta:
         expire = now + expires_delta
     else:
@@ -49,12 +50,12 @@ def create_access_token(
 
 
 def create_refresh_token(
-    data: Dict[str, Any],
-    expires_delta: Optional[timedelta] = None,
+    data: dict[str, Any],
+    expires_delta: timedelta | None = None,
 ) -> str:
     """Encode JWT refresh token with user claims and extended expiration."""
     to_encode = data.copy()
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     if expires_delta:
         expire = now + expires_delta
     else:
@@ -63,7 +64,7 @@ def create_refresh_token(
     return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
 
-def decode_jwt_token(token: str) -> Dict[str, Any]:
+def decode_jwt_token(token: str) -> dict[str, Any]:
     """Decode and validate a signed JWT token string.
 
     Raises:

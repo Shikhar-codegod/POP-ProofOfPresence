@@ -1,8 +1,9 @@
 """Video ingestion and sampling generator operating strictly in video-timeline seconds."""
 
-from datetime import datetime, timedelta, timezone
 import logging
-from typing import Generator, Optional, Tuple
+from collections.abc import Generator
+from datetime import UTC, datetime, timedelta
+
 import cv2
 import numpy as np
 
@@ -12,9 +13,9 @@ logger = logging.getLogger("pop.edge.capture")
 def sample_video_frames(
     video_path: str,
     interval_sec: float = 2.0,
-    base_timestamp: Optional[datetime] = None,
-    max_frames: Optional[int] = None,
-) -> Generator[Tuple[datetime, np.ndarray, float], None, None]:
+    base_timestamp: datetime | None = None,
+    max_frames: int | None = None,
+) -> Generator[tuple[datetime, np.ndarray, float], None, None]:
     """Sample video frames at fixed intervals of VIDEO time (not wall-clock time).
 
     Args:
@@ -47,9 +48,9 @@ def sample_video_frames(
     duration_sec = total_frames / fps if fps > 0 else 0.0
 
     if base_timestamp is None:
-        base_timestamp = datetime.now(timezone.utc)
+        base_timestamp = datetime.now(UTC)
     elif base_timestamp.tzinfo is None:
-        base_timestamp = base_timestamp.replace(tzinfo=timezone.utc)
+        base_timestamp = base_timestamp.replace(tzinfo=UTC)
 
     logger.info(
         f"Initialized video capture: '{video_path}' | FPS: {fps:.2f} | "
@@ -92,7 +93,7 @@ def sample_video_frames(
 def sample_rtsp_stream(
     rtsp_url: str,
     interval_sec: float = 2.0,
-) -> Generator[Tuple[datetime, np.ndarray, float], None, None]:
+) -> Generator[tuple[datetime, np.ndarray, float], None, None]:
     """Stubbed RTSP live streaming capture for Phase 1.
 
     Raises:

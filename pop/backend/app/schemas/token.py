@@ -1,7 +1,7 @@
 """Authentication token schemas for JWT access and refresh flows."""
 
 import uuid
-from typing import Optional
+
 from pydantic import BaseModel, Field
 
 from app.models.user import UserRole
@@ -48,4 +48,4 @@ class TokenPayload(BaseModel):
     user_id: str
     role: UserRole
     token_type: str  # "access" or "refresh"
-    exp: Optional[int] = None
+    exp: int | None = None

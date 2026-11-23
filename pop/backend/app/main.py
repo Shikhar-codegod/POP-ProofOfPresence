@@ -3,9 +3,9 @@
 Serves core API routes, interactive Swagger/ReDoc documentation, and health check endpoints.
 """
 
-from datetime import datetime, timezone
 import logging
-from typing import Any, Dict
+from datetime import UTC, datetime
+from typing import Any
 
 from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.exceptions import RequestValidationError
@@ -95,7 +95,7 @@ async def shutdown_event() -> None:
 
 
 @app.get("/health", tags=["System"])
-async def health_check() -> Dict[str, Any]:
+async def health_check() -> dict[str, Any]:
     """Health check probe for container orchestrators and edge heartbeats.
 
     Returns:
@@ -104,6 +104,6 @@ async def health_check() -> Dict[str, Any]:
     return {
         "status": "healthy",
         "service": "pop-backend",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "version": "1.0.0",
     }

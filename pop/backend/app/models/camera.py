@@ -1,7 +1,8 @@
 """Camera model representing a CCTV sensor installed at a skilling centre."""
 
 import uuid
-from typing import List, TYPE_CHECKING
+from typing import TYPE_CHECKING
+
 from sqlalchemy import Boolean, ForeignKey, String
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -10,8 +11,8 @@ from app.models.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
 
 if TYPE_CHECKING:
     from app.models.centre import Centre
-    from app.models.reading import Reading
     from app.models.device_key import DeviceKey
+    from app.models.reading import Reading
 
 
 class Camera(Base, UUIDPrimaryKeyMixin, TimestampMixin):
@@ -32,10 +33,10 @@ class Camera(Base, UUIDPrimaryKeyMixin, TimestampMixin):
 
     # Relationships
     centre: Mapped["Centre"] = relationship("Centre", back_populates="cameras")
-    readings: Mapped[List["Reading"]] = relationship(
+    readings: Mapped[list["Reading"]] = relationship(
         "Reading", back_populates="camera", cascade="all, delete-orphan"
     )
-    device_keys: Mapped[List["DeviceKey"]] = relationship(
+    device_keys: Mapped[list["DeviceKey"]] = relationship(
         "DeviceKey", back_populates="camera"
     )
 

@@ -1,1 +1,1 @@
-"""Unit tests for the POP edge pipeline."""
+"""POP Edge unit test package."""

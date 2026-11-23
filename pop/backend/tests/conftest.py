@@ -156,3 +156,26 @@ async def test_fixtures(db_session: AsyncSession) -> Dict[str, Any]:
         "camera": camera,
         "device_key": raw_device_key,
     }
+
+@pytest_asyncio.fixture
+async def inspector_headers(client: AsyncClient, test_fixtures: Dict[str, Any]) -> Dict[str, str]:
+    """Return Authorization headers for the seeded inspector test user."""
+    return {"Authorization": f"******'inspector_token']}"}
+
+
+@pytest_asyncio.fixture
+async def admin_headers(client: AsyncClient, test_fixtures: Dict[str, Any]) -> Dict[str, str]:
+    """Return Authorization headers for the seeded admin test user."""
+    return {"Authorization": f"******'admin_token']}"}
+
+
+@pytest_asyncio.fixture
+async def viewer_headers(client: AsyncClient, test_fixtures: Dict[str, Any]) -> Dict[str, str]:
+    """Return Authorization headers for the seeded viewer test user."""
+    return {"Authorization": f"******'viewer_token']}"}
+
+
+@pytest_asyncio.fixture
+async def device_key_headers(test_fixtures: Dict[str, Any]) -> Dict[str, str]:
+    """Return the active test edge device key header."""
+    return {"X-Device-Key": test_fixtures["device_key"]}

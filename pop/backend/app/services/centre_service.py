@@ -1,8 +1,8 @@
 """Centre query service retrieving dossiers, latest readings, and inventory quotas."""
 
 import logging
-from typing import Optional
 import uuid
+
 from fastapi import HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -26,7 +26,7 @@ logger = logging.getLogger("pop.services.centres")
 async def get_latest_reading_for_camera(
     db: AsyncSession,
     camera_id: uuid.UUID,
-) -> Optional[LatestReadingSummary]:
+) -> LatestReadingSummary | None:
     """Retrieve the most recent reading telemetry for a given camera."""
     query = (
         select(Reading)
@@ -51,7 +51,7 @@ async def get_latest_reading_for_camera(
 async def get_latest_reading_for_centre(
     db: AsyncSession,
     centre_id: uuid.UUID,
-) -> Optional[LatestReadingSummary]:
+) -> LatestReadingSummary | None:
     """Retrieve the most recent reading across all cameras stationed at a centre."""
     query = (
         select(Reading)
@@ -75,8 +75,8 @@ async def get_latest_reading_for_centre(
 
 async def list_centres(
     db: AsyncSession,
-    state: Optional[str] = None,
-    is_active: Optional[bool] = True,
+    state: str | None = None,
+    is_active: bool | None = True,
     limit: int = 50,
     offset: int = 0,
 ) -> CentreListPaginated:
