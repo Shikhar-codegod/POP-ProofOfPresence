@@ -249,12 +249,18 @@ def run_pipeline(
     config_dir = resolved_config_path.parent
 
     # Resolve video path
-    if not video_path:
+    if video_path:
+        requested_video = Path(video_path).expanduser()
+        video_path = str(
+            requested_video.resolve()
+            if requested_video.is_absolute()
+            else (Path.cwd() / requested_video).resolve()
+        )
+    else:
         video_path = config.get("sampling", {}).get(
             "video_path",
-            "../ml/sample_classroom.mp4",
+            str(config_dir / "../ml/sample_classroom.mp4"),
         )
-    video_path = resolve_config_relative_path(video_path, config_dir)
 
     # If test video doesn't exist yet, generate it automatically
     if not os.path.exists(video_path):

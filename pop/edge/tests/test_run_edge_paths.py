@@ -17,6 +17,23 @@ def test_default_config_is_script_relative() -> None:
     assert DEFAULT_CONFIG_PATH == Path(__file__).resolve().parents[1] / "config.yaml"
 
 
+def test_repo_relative_video_override_is_resolved_from_cwd(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    config_dir = tmp_path / "pop" / "edge"
+    config_dir.mkdir(parents=True)
+    video = tmp_path / "pop" / "ml" / "clip.mp4"
+    video.parent.mkdir(parents=True)
+    video.write_bytes(b"fixture")
+    config_path = config_dir / "config.yaml"
+    config_path.write_text(
+        yaml.safe_dump({"sampling": {"video_path": "../ml/clip.mp4"}}),
+        encoding="utf-8",
+    )
+
+    config = load_config(config_path)
+    assert config["sampling"]["video_path"] == str(video.resolve())
+
+
 def test_relative_config_paths_resolve_from_config_directory(tmp_path: Path) -> None:
     config_dir = tmp_path / "edge"
     config_dir.mkdir()

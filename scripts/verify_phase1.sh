@@ -4,7 +4,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 INFRA_DIR="$REPO_ROOT/pop/infra"
-EDGE_PYTHON="$REPO_ROOT/pop/edge/.venv/bin/python"
+EDGE_PYTHON="$REPO_ROOT/pop/edge/.venv/Scripts/python.exe"
 API_BASE="${POP_API_URL:-http://localhost:8000}"
 CENTRE_ID="${POP_CENTRE_ID:-a1000000-0000-4000-8000-000000000001}"
 VIDEO="${POP_VERIFY_VIDEO:-$REPO_ROOT/pop/ml/clips/classroom_cctv_360p.mp4}"
@@ -13,95 +13,128 @@ CONFIG="${POP_VERIFY_CONFIG:-$REPO_ROOT/pop/edge/config.local.yaml}"
 declare -a CHECKS=()
 failed=0
 
-add_result() {
-  CHECKS+=("$1|$2|$3")
+add_result() { CHECKS+=("$1|$2|$3"); }
+mask_stderr() {
+  sed -E 's/devkey_[A-Za-z0-9_-]+/devkey_[REDACTED]/g' <<<"$1" |
+    tail -n 3 | tr '\n' ' '
 }
 
-if [[ -z "${POP_ADMIN_EMAIL:-}" || -z "${POP_ADMIN_PASSWORD:-}" ]]; then
-  add_result "Credentials" "FAIL" "POP_ADMIN_EMAIL or POP_ADMIN_PASSWORD is not set"
-  failed=1
-fi
-if [[ -z "${POP_DEVICE_KEY:-}" ]]; then
-  add_result "Device key" "FAIL" "POP_DEVICE_KEY is not set"
-  failed=1
-fi
-if [[ ! -x "$EDGE_PYTHON" && ! -x "$REPO_ROOT/pop/edge/.venv/Scripts/python.exe" ]]; then
-  add_result "Environment" "FAIL" "Edge Python venv not found"
-  failed=1
-fi
-if [[ ! -f "$CONFIG" ]]; then
-  add_result "Edge config" "FAIL" "Config not found"
-  failed=1
-fi
-if [[ ! -f "$VIDEO" ]]; then
-  add_result "Test video" "FAIL" "Video not found"
-  failed=1
+set +e
+COMPOSE_OUTPUT="$(cd "$INFRA_DIR" && docker compose ps 2>&1)"
+COMPOSE_EXIT=$?
+set -e
+if [[ $COMPOSE_EXIT -eq 0 && "$COMPOSE_OUTPUT" != *"unhealthy"* && "$COMPOSE_OUTPUT" != *"not running"* ]]; then
+  add_result "Compose services" "PASS" "docker compose ps exit=$COMPOSE_EXIT"
+else
+  add_result "Compose services" "FAIL" "docker compose ps exit=$COMPOSE_EXIT; $(mask_stderr "$COMPOSE_OUTPUT")"
 fi
 
-if (( failed == 0)); then
-  if (cd "$INFRA_DIR" && docker compose ps >/dev/null); then
-    add_result "Docker Compose services" "PASS" "docker compose ps"
+set +e
+HEALTH_OUTPUT="$(curl.exe -fsS "$API_BASE/health" 2>&1)"
+HEALTH_EXIT=$?
+set -e
+if [[ $HEALTH_EXIT -eq 0 && "$HEALTH_OUTPUT" == *'"status":"healthy"'* ]]; then
+  add_result "/health" "PASS" "GET /health status=healthy"
+else
+  add_result "/health" "FAIL" "GET /health exit=$HEALTH_EXIT; $(mask_stderr "$HEALTH_OUTPUT")"
+fi
+
+if [[ -f "$CONFIG" ]]; then
+  add_result "Edge config present" "PASS" "config=$CONFIG"
+else
+  add_result "Edge config present" "FAIL" "config=$CONFIG"
+fi
+
+if [[ -n "${POP_DEVICE_KEY:-}" ]]; then
+  add_result "Edge key environment" "PASS" "POP_DEVICE_KEY set=true"
+else
+  add_result "Edge key environment" "FAIL" "POP_DEVICE_KEY set=false"
+fi
+
+LOGIN_TOKEN=""
+if [[ -n "${POP_ADMIN_EMAIL:-}" && -n "${POP_ADMIN_PASSWORD:-}" ]]; then
+  set +e
+  LOGIN_OUTPUT="$(
+    curl.exe -fsS -X POST "$API_BASE/api/v1/auth/login" \
+      -H "Content-Type: application/json" \
+      -d "{\"email\":\"$POP_ADMIN_EMAIL\",\"password\":\"$POP_ADMIN_PASSWORD\"}" 2>&1
+  )"
+  LOGIN_EXIT=$?
+  set -e
+  if [[ $LOGIN_EXIT -eq 0 ]]; then
+    LOGIN_TOKEN="$(python -c 'import json,sys; print(json.load(sys.stdin)["access_token"])' <<<"$LOGIN_OUTPUT")"
+    add_result "Admin login" "PASS" "POST /api/v1/auth/login"
   else
-    add_result "Docker Compose services" "FAIL" "docker compose ps"
-    failed=1
+    add_result "Admin login" "FAIL" "POST /api/v1/auth/login exit=$LOGIN_EXIT; $(mask_stderr "$LOGIN_OUTPUT")"
   fi
+else
+  add_result "Admin login" "FAIL" "POP_ADMIN_EMAIL or POP_ADMIN_PASSWORD is not set"
 fi
 
-if (( failed == 0)); then
-  if curl -fsS "$API_BASE/health" >/dev/null; then
-    add_result "/health" "PASS" "GET /health"
-  else
-    add_result "/health" "FAIL" "GET /health"
-    failed=1
-  fi
-fi
+if [[ -f "$CONFIG" && -f "$VIDEO" && -x "$EDGE_PYTHON" && -n "${POP_DEVICE_KEY:-}" ]]; then
+  CAMERA_ID="$("$EDGE_PYTHON" -c "import yaml; d=yaml.safe_load(open(r'$CONFIG',encoding='utf-8')); print(d['backend']['camera_id'])")"
 
-if (( failed == 0)); then
-  LOGIN_JSON="$(curl -fsS -X POST "$API_BASE/api/v1/auth/login" \
-    -H "Content-Type: application/json" \
-    -d "{\"email\":\"$POP_ADMIN_EMAIL\",\"password\":\"$POP_ADMIN_PASSWORD\"}")"
-  TOKEN="$(python3 -c 'import json,sys; print(json.load(sys.stdin)["access_token"])' <<<"$LOGIN_JSON")"
-  add_result "Admin login" "PASS" "POST /api/v1/auth/login"
+  cd "$INFRA_DIR"
+  POSTGRES_USER="$(sed -n 's/^POSTGRES_USER=//p' .env | head -n 1)"
+  POSTGRES_DB="$(sed -n 's/^POSTGRES_DB=//p' .env | head -n 1)"
+  COUNT_BEFORE="$(docker compose exec -T postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc "select count(*) from readings where camera_id='$CAMERA_ID';" | tr -d '[:space:]')"
 
-  COUNT_BEFORE="$(cd "$INFRA_DIR" && docker compose exec -T postgres psql -U pop_user -d pop_db -tAc 'SELECT COUNT(*) FROM readings;' | tr -d '[:space:]')"
-  START_TIME="$(python3 -c 'from datetime import datetime,timezone,timedelta; print((datetime.now(timezone.utc)-timedelta(seconds=30)).strftime("%Y-%m-%dT%H:%M:%SZ"))')"
-
-  if [[ -x "$REPO_ROOT/pop/edge/.venv/Scripts/python.exe" ]]; then
-    EDGE_PYTHON="$REPO_ROOT/pop/edge/.venv/Scripts/python.exe"
-  fi
-
-  FIRST_LOG="$("$EDGE_PYTHON" "$REPO_ROOT/pop/edge/run_edge.py" --config "$CONFIG" --video "$VIDEO" --start-time "$START_TIME" 2>&1)"
+  cd "$REPO_ROOT"
+  set +e
+  FIRST_LOG="$("$EDGE_PYTHON" pop/edge/run_edge.py --config "$CONFIG" --video "$VIDEO" 2>&1)"
+  FIRST_EXIT=$?
+  set -e
   FIRST_201="$(grep -c 'Reading POST HTTP 201' <<<"$FIRST_LOG" || true)"
-  if [[ "$FIRST_201" -gt 0 ]]; then
-    add_result "Edge first run" "PASS" "$FIRST_201 reading POST(s) returned HTTP 201"
+  FIRST_401="$(grep -c 'Reading POST HTTP 401' <<<"$FIRST_LOG" || true)"
+  if [[ $FIRST_EXIT -eq 0 && $FIRST_201 -gt 0 ]]; then
+    add_result "Edge first run" "PASS" "HTTP 201=$FIRST_201; HTTP 401=$FIRST_401; exit=$FIRST_EXIT"
   else
-    add_result "Edge first run" "FAIL" "No HTTP 201 reading POST detected"
+    add_result "Edge first run" "FAIL" "HTTP 201=$FIRST_201; HTTP 401=$FIRST_401; exit=$FIRST_EXIT; $(mask_stderr "$FIRST_LOG")"
   fi
 
-  COUNT_AFTER_FIRST="$(cd "$INFRA_DIR" && docker compose exec -T postgres psql -U pop_user -d pop_db -tAc 'SELECT COUNT(*) FROM readings;' | tr -d '[:space:]')"
-  SECOND_LOG="$("$EDGE_PYTHON" "$REPO_ROOT/pop/edge/run_edge.py" --config "$CONFIG" --video "$VIDEO" --start-time "$START_TIME" 2>&1)"
+  cd "$INFRA_DIR"
+  COUNT_AFTER_FIRST="$(docker compose exec -T postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc "select count(*) from readings where camera_id='$CAMERA_ID';" | tr -d '[:space:]')"
+  cd "$REPO_ROOT"
+
+  set +e
+  SECOND_LOG="$("$EDGE_PYTHON" pop/edge/run_edge.py --config "$CONFIG" --video "$VIDEO" 2>&1)"
+  SECOND_EXIT=$?
+  set -e
   SECOND_200="$(grep -c 'Reading POST HTTP 200' <<<"$SECOND_LOG" || true)"
-  if [[ "$SECOND_200" -gt 0 ]]; then
-    add_result "Edge duplicate run" "PASS" "$SECOND_200 reading POST(s) returned HTTP 200"
+  SECOND_401="$(grep -c 'Reading POST HTTP 401' <<<"$SECOND_LOG" || true)"
+  if [[ $SECOND_EXIT -eq 0 && $SECOND_200 -gt 0 ]]; then
+    add_result "Edge duplicate run" "PASS" "HTTP 200=$SECOND_200; HTTP 401=$SECOND_401; exit=$SECOND_EXIT"
   else
-    add_result "Edge duplicate run" "FAIL" "No HTTP 200 reading POST detected"
+    add_result "Edge duplicate run" "FAIL" "HTTP 200=$SECOND_200; HTTP 401=$SECOND_401; exit=$SECOND_EXIT; $(mask_stderr "$SECOND_LOG")"
   fi
 
-  COUNT_AFTER_SECOND="$(cd "$INFRA_DIR" && docker compose exec -T postgres psql -U pop_user -d pop_db -tAc 'SELECT COUNT(*) FROM readings;' | tr -d '[:space:]')"
+  cd "$INFRA_DIR"
+  COUNT_AFTER_SECOND="$(docker compose exec -T postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc "select count(*) from readings where camera_id='$CAMERA_ID';" | tr -d '[:space:]')"
+  cd "$REPO_ROOT"
   if [[ "$COUNT_AFTER_FIRST" == "$COUNT_AFTER_SECOND" ]]; then
-    add_result "Reading count unchanged" "PASS" "Before=$COUNT_BEFORE; after first=$COUNT_AFTER_FIRST; after second=$COUNT_AFTER_SECOND"
+    add_result "Reading count unchanged" "PASS" "before=$COUNT_BEFORE; after first=$COUNT_AFTER_FIRST; after second=$COUNT_AFTER_SECOND"
   else
-    add_result "Reading count unchanged" "FAIL" "Before=$COUNT_BEFORE; after first=$COUNT_AFTER_FIRST; after second=$COUNT_AFTER_SECOND"
+    add_result "Reading count unchanged" "FAIL" "before=$COUNT_BEFORE; after first=$COUNT_AFTER_FIRST; after second=$COUNT_AFTER_SECOND"
   fi
 
-  CSV_STABLE="$(python3 -c 'import csv,sys; r=list(csv.DictReader(open(sys.argv[1], encoding="utf-8"))); print(r[-1]["stable_count"])' "$REPO_ROOT/pop/edge/output/readings.csv")"
-  CENTRE_JSON="$(curl -fsS -H "Authorization: Bearer $TOKEN" "$API_BASE/api/v1/centres/$CENTRE_ID")"
-  API_STABLE="$(python3 -c 'import json,sys; d=json.load(sys.stdin); print(next((int(c["latest_reading"]["stable_count"]) for c in d["cameras"] if c.get("latest_reading")), ""))' <<<"$CENTRE_JSON")"
-  if [[ "$API_STABLE" == "$CSV_STABLE" ]]; then
-    add_result "Latest stable_count match" "PASS" "API=$API_STABLE; CSV=$CSV_STABLE"
+  if [[ -n "$LOGIN_TOKEN" ]]; then
+    CSV_STABLE="$(python -c 'import csv,sys; r=list(csv.DictReader(open(sys.argv[1],encoding="utf-8"))); print(r[-1]["stable_count"])' "$REPO_ROOT/pop/edge/output/readings.csv")"
+    CENTRE_JSON="$(curl.exe -fsS -H "Authorization: Bearer $LOGIN_TOKEN" "$API_BASE/api/v1/centres/$CENTRE_ID")"
+    API_RESULT="$(python -c 'import json,sys; d=json.load(sys.stdin); c=next((c for c in d["cameras"] if c.get("latest_reading")),None); print("" if not c else str(c["latest_reading"]["stable_count"])+"|"+str(c["latest_reading"]["timestamp"]))' <<<"$CENTRE_JSON")"
+    API_STABLE="${API_RESULT%%|*}"
+    if [[ "$API_STABLE" == "$CSV_STABLE" ]]; then
+      add_result "Latest stable_count match" "PASS" "API stable=$API_STABLE; CSV stable=$CSV_STABLE"
+    else
+      add_result "Latest stable_count match" "FAIL" "API stable=$API_STABLE; CSV stable=$CSV_STABLE"
+    fi
   else
-    add_result "Latest stable_count match" "FAIL" "API=$API_STABLE; CSV=$CSV_STABLE"
+    add_result "Latest stable_count match" "FAIL" "Skipped: admin login unavailable"
   fi
+else
+  add_result "Edge first run" "FAIL" "Skipped: edge Python, config, video, or POP_DEVICE_KEY unavailable"
+  add_result "Edge duplicate run" "FAIL" "Skipped: edge Python, config, video, or POP_DEVICE_KEY unavailable"
+  add_result "Reading count unchanged" "FAIL" "Skipped: edge run unavailable"
+  add_result "Latest stable_count match" "FAIL" "Skipped: edge run or admin login unavailable"
 fi
 
 printf "%-28s %-4s %s\n" "CHECK" "STATUS" "DETAIL"
