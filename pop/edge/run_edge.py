@@ -10,6 +10,7 @@ import argparse
 import csv
 import logging
 import os
+from pathlib import Path
 from typing import Any
 
 import cv2
@@ -29,13 +30,73 @@ logging.basicConfig(
 logger = logging.getLogger("pop.edge.runner")
 
 
-def load_config(config_path: str) -> dict[str, Any]:
-    """Load and parse YAML edge configuration file."""
-    if not os.path.exists(config_path):
-        raise FileNotFoundError(f"Configuration file not found at: {config_path}")
-    with open(config_path, encoding="utf-8") as f:
-        config = yaml.safe_load(f)
-    logger.info(f"Loaded edge configuration from: {config_path}")
+EDGE_DIR = Path(__file__).resolve().parent
+DEFAULT_CONFIG_PATH = EDGE_DIR / "config.yaml"
+
+
+def deep_merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
+    """Recursively merge an override mapping over a base mapping."""
+    merged = dict(base)
+    for key, value in override.items():
+        if isinstance(value, dict) and isinstance(merged.get(key), dict):
+            merged[key] = deep_merge(merged[key], value)
+        else:
+            merged[key] = value
+    return merged
+
+
+def resolve_config_path(config_path: str | os.PathLike[str] | None = None) -> Path:
+    """Resolve an explicit config path or the script-relative default."""
+    if config_path is None:
+        return DEFAULT_CONFIG_PATH
+
+    path = Path(config_path).expanduser()
+    return path.resolve() if path.is_absolute() else (Path.cwd() / path).resolve()
+
+
+def resolve_config_relative_path(value: str | os.PathLike[str], config_dir: Path) -> str:
+    """Resolve a relative config path against the directory containing the config."""
+    path = Path(value).expanduser()
+    return str(path.resolve() if path.is_absolute() else (config_dir / path).resolve())
+
+
+def load_config(config_path: str | os.PathLike[str] | None = None) -> dict[str, Any]:
+    """Load config.yaml, deep-overlay config.local.yaml, and apply environment overrides."""
+    base_path = resolve_config_path(config_path)
+    if not base_path.is_file():
+        raise FileNotFoundError(
+            f"Configuration file not found. Searched path: {base_path}"
+        )
+
+    with base_path.open(encoding="utf-8") as f:
+        config = yaml.safe_load(f) or {}
+
+    local_path = base_path.with_name("config.local.yaml")
+    if local_path.is_file():
+        with local_path.open(encoding="utf-8") as f:
+            local_config = yaml.safe_load(f) or {}
+        config = deep_merge(config, local_config)
+        logger.info(f"Overlaid edge configuration from: {local_path}")
+
+    device_key = os.environ.get("POP_DEVICE_KEY")
+    if device_key:
+        config.setdefault("backend", {})["device_key"] = device_key
+
+    config_dir = base_path.parent
+    detection = config.setdefault("detection", {})
+    if detection.get("model_path"):
+        detection["model_path"] = resolve_config_relative_path(detection["model_path"], config_dir)
+
+    sampling = config.setdefault("sampling", {})
+    if sampling.get("video_path"):
+        sampling["video_path"] = resolve_config_relative_path(sampling["video_path"], config_dir)
+
+    output = config.setdefault("output", {})
+    for key in ("csv_path", "plot_path", "annotated_video_path"):
+        if output.get(key):
+            output[key] = resolve_config_relative_path(output[key], config_dir)
+
+    logger.info(f"Loaded edge configuration from: {base_path}")
     return config
 
 
@@ -154,7 +215,7 @@ def annotate_frame(
 
 
 def run_pipeline(
-    config_path: str = "pop/edge/config.yaml",
+    config_path: str | os.PathLike[str] | None = None,
     video_path: str | None = None,
     no_post: bool = True,
     save_video_override: bool | None = None,
@@ -171,10 +232,16 @@ def run_pipeline(
         List[Dict[str, Any]]: Array of processed sample records.
     """
     config = load_config(config_path)
+    resolved_config_path = resolve_config_path(config_path)
+    config_dir = resolved_config_path.parent
 
     # Resolve video path
     if not video_path:
-        video_path = config.get("video_path", "pop/ml/sample_classroom.mp4")
+        video_path = config.get("sampling", {}).get(
+            "video_path",
+            "../ml/sample_classroom.mp4",
+        )
+    video_path = resolve_config_relative_path(video_path, config_dir)
 
     # If test video doesn't exist yet, generate it automatically
     if not os.path.exists(video_path):
@@ -320,7 +387,11 @@ def run_pipeline(
 def main() -> None:
     """CLI entrypoint for run_edge.py."""
     parser = argparse.ArgumentParser(description="ProofOfPresence (POP) Edge Analytics Runner")
-    parser.add_argument("--config", default="pop/edge/config.yaml", help="Path to config.yaml")
+    parser.add_argument(
+        "--config",
+        default=None,
+        help="Path to config.yaml (default: config.yaml next to run_edge.py)",
+    )
     parser.add_argument("--video", default=None, help="Input video file path")
     parser.add_argument("--no-post", action="store_true", default=False, help="Disable backend HTTP ingestion (offline mode)")
     parser.add_argument("--save-video", action="store_true", default=False, help="Render annotated output video")

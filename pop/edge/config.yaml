@@ -11,6 +11,8 @@ detection:
 
 # Frame Sampling Rules (Video time, not wall clock)
 sampling:
+  # Relative paths are resolved from pop/edge (the config file directory).
+  video_path: "../ml/sample_classroom.mp4"
   # Sample 1 frame every N seconds of video timeline
   interval_sec: 2
   max_frames: null  # null for complete video, or integer limit for rapid testing
@@ -40,11 +42,11 @@ backend:
   url: "http://pop_backend:8000/api/v1/readings"
   
   # Plaintext API key provisioned for this camera node (seed prints this)
-  device_key: "devkey_WHiHL4Krl-cPFy0F2ReMFKOlMAhuvLaesMDPxpb2ZLY"
+  device_key: "<DEVICE_KEY>"
   
   # Target facility and camera UUID identifiers
-  centre_id: "a1000000-0000-4000-8000-000000000001"
-  camera_id: "fd38f22b-3065-4f94-a354-0255739d54d0"
+  centre_id: "<CENTRE_ID>"
+  camera_id: "<CAMERA_ID>"
   
   # Network retry configuration
   max_retries: 4

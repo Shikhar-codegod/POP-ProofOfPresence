@@ -102,7 +102,19 @@ The seed script creates:
 - **5 Skilling Centres** across Haryana, Karnataka, Odisha, Rajasthan, and Uttar Pradesh (including 2 centres with deliberate ghost-attendance mismatches across 14 days of history).
 - **Provisioned Camera UUIDs & Plaintext `X-Device-Key` credentials**, printed once to stdout.
 
-Copy one of the printed `centre_id`, `camera_id`, and `X-Device-Key` values into `pop/edge/config.yaml` under the `backend:` section.
+Do not commit real device credentials. Copy the provisioned `centre_id`, `camera_id`, and `X-Device-Key`
+values into `pop/edge/config.local.yaml`:
+
+```yaml
+backend:
+  device_key: "<DEVICE_KEY>"
+  centre_id: "<CENTRE_ID>"
+  camera_id: "<CAMERA_ID>"
+```
+
+`config.local.yaml` is git-ignored and overrides `config.yaml` for matching keys. `POP_DEVICE_KEY`
+takes highest precedence for `backend.device_key`. `--config` may point to another base config; its
+next-to-it `config.local.yaml` will also be overlaid.
 
 ### 5. Run the Edge Script on a Sample Video
 
