@@ -29,6 +29,21 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(me
 logger = logging.getLogger("pop.seed")
 
 
+def clamp_seed_timestamp(reading_dt: datetime, now: datetime | None = None) -> datetime:
+    """Clamp a generated seed reading to at least one minute in the past."""
+    if now is None:
+        now = datetime.now(timezone.utc)
+    if now.tzinfo is None:
+        now = now.replace(tzinfo=timezone.utc)
+    if reading_dt.tzinfo is None:
+        reading_dt = reading_dt.replace(tzinfo=timezone.utc)
+
+    latest_allowed = now.astimezone(timezone.utc) - timedelta(minutes=1)
+    if reading_dt.astimezone(timezone.utc) > latest_allowed:
+        return latest_allowed
+    return reading_dt.astimezone(timezone.utc)
+
+
 def seed_database() -> None:
     """Execute complete database seeding."""
     logger.info("Beginning database seed...")
@@ -272,6 +287,7 @@ def seed_database() -> None:
                             rec_date.year, rec_date.month, rec_date.day,
                             hour, minute, 0, tzinfo=timezone.utc
                         )
+                        reading_dt = clamp_seed_timestamp(reading_dt)
                         reading = Reading(
                             centre_id=centre.id,
                             camera_id=cam.id,
