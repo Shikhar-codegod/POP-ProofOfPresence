@@ -1,6 +1,6 @@
 """End-to-end API tests covering readings ingestion, idempotency, auth, and RBAC."""
 
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 import pytest
@@ -25,7 +25,7 @@ async def test_valid_reading_ingestion_and_centre_retrieval(
     """Valid edge reading should persist with 201 and appear as latest_reading on centre dossier."""
     centre = test_fixtures["centre"]
     camera = test_fixtures["camera"]
-    sample_ts = (datetime.now(UTC) - timedelta(seconds=15)).replace(microsecond=0)
+    sample_ts = (datetime.now(timezone.utc) - timedelta(seconds=15)).replace(microsecond=0)
 
     payload = {
         "centre_id": str(centre.id),
@@ -81,7 +81,7 @@ async def test_duplicate_reading_is_idempotent(
     """Duplicate (camera_id, timestamp) submission should return 200 with existing record."""
     centre = test_fixtures["centre"]
     camera = test_fixtures["camera"]
-    sample_ts = (datetime.now(UTC) - timedelta(seconds=30)).replace(microsecond=0)
+    sample_ts = (datetime.now(timezone.utc) - timedelta(seconds=30)).replace(microsecond=0)
 
     payload = {
         "centre_id": str(centre.id),
@@ -113,7 +113,7 @@ async def test_future_timestamp_rejected(
     test_fixtures: dict[str, Any],
 ) -> None:
     """Readings timestamped far in the future must be rejected with HTTP 400."""
-    future_ts = datetime.now(UTC) + timedelta(hours=2)
+    future_ts = datetime.now(timezone.utc) + timedelta(hours=2)
     payload = {
         "centre_id": str(test_fixtures["centre"].id),
         "camera_id": str(test_fixtures["camera"].id),
@@ -141,7 +141,7 @@ async def test_bad_or_missing_device_key_rejected(
     payload = {
         "centre_id": str(test_fixtures["centre"].id),
         "camera_id": str(test_fixtures["camera"].id),
-        "timestamp": datetime.now(UTC).isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
         "raw_count": 5,
         "stable_count": 5,
         "equipment": {},
@@ -223,7 +223,7 @@ async def test_role_enforcement(
         json={
             "centre_id": str(test_fixtures["centre"].id),
             "camera_id": str(test_fixtures["camera"].id),
-            "timestamp": (datetime.now(UTC) - timedelta(seconds=5)).isoformat(),
+            "timestamp": (datetime.now(timezone.utc) - timedelta(seconds=5)).isoformat(),
             "raw_count": 12,
             "stable_count": 11,
             "equipment": {},

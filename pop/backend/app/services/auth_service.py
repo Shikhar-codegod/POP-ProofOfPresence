@@ -2,7 +2,7 @@
 
 import logging
 import uuid
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from fastapi import HTTPException, status
 from jose import JWTError
@@ -169,7 +169,7 @@ async def provision_device_key(
 
     expires_at = None
     if device_in.expires_in_days:
-        expires_at = datetime.now(UTC) + timedelta(days=device_in.expires_in_days)
+        expires_at=datetime.now(timezone.utc) + timedelta(days=device_in.expires_in_days)
 
     device_key_obj = DeviceKey(
         key_hash=key_hash,

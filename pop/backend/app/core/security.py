@@ -2,7 +2,7 @@
 
 import hashlib
 import secrets
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from jose import jwt
@@ -40,7 +40,7 @@ def create_access_token(
 ) -> str:
     """Encode JWT access token with user claims and expiration."""
     to_encode = data.copy()
-    now = datetime.now(UTC)
+    now = datetime.now(timezone.utc)
     if expires_delta:
         expire = now + expires_delta
     else:
@@ -55,7 +55,7 @@ def create_refresh_token(
 ) -> str:
     """Encode JWT refresh token with user claims and extended expiration."""
     to_encode = data.copy()
-    now = datetime.now(UTC)
+    now = datetime.now(timezone.utc)
     if expires_delta:
         expire = now + expires_delta
     else:

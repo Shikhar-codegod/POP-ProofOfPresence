@@ -3,7 +3,7 @@
 import os
 import sys
 from collections.abc import AsyncGenerator
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -126,7 +126,7 @@ async def _seed_test_data(session: AsyncSession) -> None:
     session.add(
         AttendanceRecord(
             centre_id=centres[0].id,
-            date=datetime.now(UTC).date(),
+            date=datetime.now(timezone.utc).date(),
             enrolled_count=30,
             official_present_count=27,
             source="portal",
@@ -137,7 +137,7 @@ async def _seed_test_data(session: AsyncSession) -> None:
             centre_id=centres[0].id,
             item_type="desktop_computer",
             sanctioned_quantity=30,
-            last_verified_at=datetime.now(UTC),
+            last_verified_at=datetime.now(timezone.utc),
         )
     )
 
@@ -149,7 +149,7 @@ async def _seed_test_data(session: AsyncSession) -> None:
             centre_id=centres[0].id,
             camera_id=camera.id,
             is_active=True,
-            expires_at=datetime.now(UTC) + timedelta(days=30),
+            expires_at=datetime.now(timezone.utc) + timedelta(days=30),
         )
     )
     await session.commit()

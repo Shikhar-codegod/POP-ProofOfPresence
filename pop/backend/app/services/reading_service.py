@@ -1,7 +1,7 @@
 """Reading ingestion service handling validation, future timestamp checks, and idempotent inserts."""
 
 import logging
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from fastapi import HTTPException, status
 from sqlalchemy import select
@@ -64,9 +64,9 @@ async def ingest_reading(
     # 2. Normalize and validate timestamp
     reading_ts = reading_in.timestamp
     if reading_ts.tzinfo is None:
-        reading_ts = reading_ts.replace(tzinfo=UTC)
+        reading_ts = reading_ts.replace(tzinfo=timezone.utc)
 
-    now_utc = datetime.now(UTC)
+    now_utc = datetime.now(timezone.utc)
     max_tolerated_future = now_utc + timedelta(seconds=settings.MAX_FUTURE_TIMESTAMP_SKEW_SECONDS)
     if reading_ts > max_tolerated_future:
         logger.warning(

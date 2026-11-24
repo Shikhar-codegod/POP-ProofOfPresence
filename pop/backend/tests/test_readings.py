@@ -1,6 +1,6 @@
 """Integration tests for edge reading telemetry ingestion and idempotency rules."""
 
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import httpx
 import pytest
@@ -13,7 +13,7 @@ async def test_post_reading_success_and_idempotency(
 ):
     """Verify fresh reading returns 201 Created, and duplicate submission returns 200 OK."""
     # Use distinct timestamp to avoid collision with seed readings
-    test_dt = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+    test_dt = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
     payload = {
         "centre_id": "a1000000-0000-4000-8000-000000000001",
@@ -48,7 +48,7 @@ async def test_post_reading_future_timestamp_rejected(
     device_key_headers: dict[str, str],
 ):
     """Verify timestamp skewed > 5 minutes into the future is rejected with 400 TIMESTAMP_FUTURE."""
-    future_dt = (datetime.now(UTC) + timedelta(minutes=15)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    future_dt = (datetime.now(timezone.utc) + timedelta(minutes=15)).strftime("%Y-%m-%dT%H:%M:%SZ")
 
     payload = {
         "centre_id": "a1000000-0000-4000-8000-000000000001",
@@ -71,7 +71,7 @@ async def test_post_reading_missing_device_key(client: httpx.AsyncClient):
     payload = {
         "centre_id": "a1000000-0000-4000-8000-000000000001",
         "camera_id": "fd38f22b-3065-4f94-a354-0255739d54d0",
-        "timestamp": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "raw_count": 10,
         "stable_count": 10,
         "frame_quality": 0.80,
@@ -90,7 +90,7 @@ async def test_post_reading_invalid_device_key(client: httpx.AsyncClient):
     payload = {
         "centre_id": "a1000000-0000-4000-8000-000000000001",
         "camera_id": "fd38f22b-3065-4f94-a354-0255739d54d0",
-        "timestamp": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "raw_count": 10,
         "stable_count": 10,
         "frame_quality": 0.80,

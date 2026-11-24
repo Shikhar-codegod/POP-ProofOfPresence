@@ -4,7 +4,7 @@ Serves core API routes, interactive Swagger/ReDoc documentation, and health chec
 """
 
 import logging
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from typing import Any
 
 from fastapi import FastAPI, HTTPException, Request, status
@@ -108,6 +108,6 @@ async def health_check() -> dict[str, Any]:
     return {
         "status": "healthy",
         "service": "pop-backend",
-        "timestamp": datetime.now(UTC).isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
         "version": "1.0.0",
     }

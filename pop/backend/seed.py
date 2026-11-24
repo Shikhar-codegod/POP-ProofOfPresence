@@ -12,7 +12,7 @@ Provisions realistic vocational skilling centres across India with:
 import logging
 import random
 import uuid
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from app.core.database import SyncSessionLocal
 from app.core.security import generate_raw_device_key, get_password_hash, hash_device_key
@@ -175,7 +175,7 @@ def seed_database() -> None:
         ]
 
         device_keys_summary = []
-        today = datetime.now(UTC).date()
+        today = datetime.now(timezone.utc).date()
 
         for cdata in centres_data:
             centre = Centre(
@@ -196,7 +196,7 @@ def seed_database() -> None:
                     centre_id=centre.id,
                     item_type=item_type,
                     sanctioned_quantity=qty,
-                    last_verified_at=datetime.now(UTC) - timedelta(days=random.randint(1, 10)),
+                    last_verified_at=datetime.now(timezone.utc) - timedelta(days=random.randint(1, 10)),
                 )
                 session.add(inv)
 
@@ -223,7 +223,7 @@ def seed_database() -> None:
                     centre_id=centre.id,
                     camera_id=cam.id,
                     is_active=True,
-                    expires_at=datetime.now(UTC) + timedelta(days=365),
+                    expires_at=datetime.now(timezone.utc) + timedelta(days=365),
                 )
                 session.add(dev_key)
 
@@ -270,7 +270,7 @@ def seed_database() -> None:
                         raw_sample = sample_count + random.choice([0, 1])  # Raw might catch a passerby
                         reading_dt = datetime(
                             rec_date.year, rec_date.month, rec_date.day,
-                            hour, minute, 0, tzinfo=UTC
+                            hour, minute, 0, tzinfo=timezone.utc
                         )
                         reading = Reading(
                             centre_id=centre.id,

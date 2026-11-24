@@ -2,7 +2,7 @@
 
 import uuid
 from collections.abc import Callable
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 
 from fastapi import Depends, Header, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -133,7 +133,7 @@ async def validate_device_key(
 
     # Check key expiration if set
     if device_key_obj.expires_at is not None:
-        if datetime.now(UTC) > device_key_obj.expires_at:
+        if datetime.now(timezone.utc) > device_key_obj.expires_at:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail={"error": {"code": "DEVICE_KEY_EXPIRED", "message": "Device key has expired."}},
