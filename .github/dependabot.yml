@@ -1,0 +1,27 @@
+version: 2
+
+updates:
+  - package-ecosystem: "pip"
+    directory: "/pop/backend"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "pip"
+    directory: "/pop/edge"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "docker"
+    directory: "/pop/backend"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "docker"
+    directory: "/pop/infra"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
