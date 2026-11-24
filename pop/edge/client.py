@@ -48,6 +48,7 @@ class EdgeBackendClient:
         self.max_retries = max_retries
         self.backoff_factor = backoff_factor
         self.timeout_sec = timeout_sec
+        self.last_status_code: int | None = None
 
         self._session = requests.Session()
         self._session.headers.update({
@@ -117,14 +118,15 @@ class EdgeBackendClient:
                     json=payload,
                     timeout=self.timeout_sec,
                 )
+                self.last_status_code = response.status_code
 
                 # HTTP 201 Created (new) or HTTP 200 OK (idempotent duplicate)
                 if response.status_code in (200, 201):
                     res_json = response.json()
                     status_text = "created" if response.status_code == 201 else "idempotent match"
-                    logger.debug(
-                        f"Successfully posted reading ({status_text}) for camera {self.camera_id} "
-                        f"@ {payload['timestamp']}"
+                    logger.info(
+                        f"Reading POST HTTP {response.status_code} ({status_text}) "
+                        f"for camera {self.camera_id} @ {payload['timestamp']}"
                     )
                     return res_json
 

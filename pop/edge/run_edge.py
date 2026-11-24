@@ -10,6 +10,7 @@ import argparse
 import csv
 import logging
 import os
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -58,6 +59,17 @@ def resolve_config_relative_path(value: str | os.PathLike[str], config_dir: Path
     """Resolve a relative config path against the directory containing the config."""
     path = Path(value).expanduser()
     return str(path.resolve() if path.is_absolute() else (config_dir / path).resolve())
+
+
+def parse_start_time(value: str | None) -> datetime | None:
+    """Parse an ISO-8601 start timestamp, requiring timezone or assuming UTC."""
+    if value is None:
+        return None
+
+    parsed = datetime.fromisoformat(value.strip().replace("Z", "+00:00"))
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
 
 
 def load_config(config_path: str | os.PathLike[str] | None = None) -> dict[str, Any]:
@@ -219,6 +231,7 @@ def run_pipeline(
     video_path: str | None = None,
     no_post: bool = True,
     save_video_override: bool | None = None,
+    start_time: str | None = None,
 ) -> list[dict[str, Any]]:
     """Execute complete edge person detection and counting pipeline.
 
@@ -271,6 +284,7 @@ def run_pipeline(
     smp_cfg = config.get("sampling", {})
     interval_sec = smp_cfg.get("interval_sec", 2.0)
     max_frames = smp_cfg.get("max_frames", None)
+    base_timestamp = parse_start_time(start_time or smp_cfg.get("start_time"))
 
     # Output paths
     out_cfg = config.get("output", {})
@@ -309,6 +323,7 @@ def run_pipeline(
         video_path=video_path,
         interval_sec=interval_sec,
         max_frames=max_frames,
+        base_timestamp=base_timestamp,
     ):
         # 1. Compute frame quality metrics
         quality_score, brightness, sharpness = compute_frame_quality(frame)
@@ -396,6 +411,11 @@ def main() -> None:
         help="Path to config.yaml (default: config.yaml next to run_edge.py)",
     )
     parser.add_argument("--video", default=None, help="Input video file path")
+    parser.add_argument(
+        "--start-time",
+        default=None,
+        help="ISO-8601 starting timestamp (default: now; config sampling.start_time)",
+    )
     parser.add_argument("--no-post", action="store_true", default=False, help="Disable backend HTTP ingestion (offline mode)")
     parser.add_argument("--save-video", action="store_true", default=False, help="Render annotated output video")
 
@@ -405,6 +425,7 @@ def main() -> None:
         video_path=args.video,
         no_post=args.no_post,
         save_video_override=args.save_video,
+        start_time=args.start_time,
     )
 
 

@@ -13,6 +13,8 @@ detection:
 sampling:
   # Relative paths are resolved from pop/edge (the config file directory).
   video_path: "../ml/sample_classroom.mp4"
+  # Optional ISO-8601 UTC start timestamp for deterministic reruns
+  start_time: null
   # Sample 1 frame every N seconds of video timeline
   interval_sec: 2
   max_frames: null  # null for complete video, or integer limit for rapid testing

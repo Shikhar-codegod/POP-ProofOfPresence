@@ -8,6 +8,7 @@ from run_edge import (
     DEFAULT_CONFIG_PATH,
     deep_merge,
     load_config,
+    parse_start_time,
     run_pipeline,
 )
 
@@ -100,3 +101,18 @@ def test_missing_video_error_lists_absolute_path_and_generate_command(tmp_path: 
     message = str(exc_info.value)
     assert str(missing_video) in message
     assert "generate_test_video.py" in message
+
+
+def test_parse_start_time_accepts_iso_z_and_is_deterministic() -> None:
+    first = parse_start_time("2026-11-24T10:00:00Z")
+    second = parse_start_time("2026-11-24T10:00:00+00:00")
+
+    assert first is not None
+    assert second is not None
+    assert first == second
+    assert first.isoformat() == "2026-11-24T10:00:00+00:00"
+
+
+def test_parse_start_time_rejects_invalid_iso8601() -> None:
+    with pytest.raises(ValueError):
+        parse_start_time("not-an-iso-timestamp")
