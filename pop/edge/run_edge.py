@@ -245,9 +245,12 @@ def run_pipeline(
 
     # If test video doesn't exist yet, generate it automatically
     if not os.path.exists(video_path):
-        logger.info(f"Input video '{video_path}' does not exist. Auto-generating synthetic test clip...")
-        from pop.ml.generate_test_video import generate_classroom_clip
-        generate_classroom_clip(output_path=video_path, duration_sec=14)
+        raise FileNotFoundError(
+            f"Input video not found. Searched path: {Path(video_path).resolve()}\n"
+            "Generate the synthetic clip with:\n"
+            f"python \"{EDGE_DIR.parent / 'ml' / 'generate_test_video.py'}\" "
+            f"--output \"{Path(video_path).resolve()}\" --duration 14"
+        )
 
     # Initialize YOLO detector
     det_cfg = config.get("detection", {})

@@ -8,6 +8,7 @@ from run_edge import (
     DEFAULT_CONFIG_PATH,
     deep_merge,
     load_config,
+    run_pipeline,
 )
 
 
@@ -78,3 +79,24 @@ def test_deep_merge() -> None:
         {"backend": {"device_key": "a", "centre_id": "b"}},
         {"backend": {"device_key": "c"}},
     ) == {"backend": {"device_key": "c", "centre_id": "b"}}
+
+
+def test_missing_video_error_lists_absolute_path_and_generate_command(tmp_path: Path) -> None:
+    config_dir = tmp_path / "edge"
+    config_dir.mkdir()
+    missing_video = tmp_path / "missing.mp4"
+    config_path = config_dir / "config.yaml"
+    config_path.write_text(
+        yaml.safe_dump({
+            "sampling": {"video_path": str(missing_video)},
+            "detection": {"model_path": "yolo11n.pt"},
+        }),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(FileNotFoundError) as exc_info:
+        run_pipeline(config_path=config_path, no_post=True)
+
+    message = str(exc_info.value)
+    assert str(missing_video) in message
+    assert "generate_test_video.py" in message

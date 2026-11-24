@@ -11,12 +11,22 @@ Renders an annotated classroom environment with:
 import argparse
 import logging
 import os
+from pathlib import Path
 
 import cv2
 import numpy as np
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("pop.ml.synthetic")
+
+
+def resolve_output_path(output_path: str | os.PathLike[str] | None = None) -> Path:
+    """Resolve an explicit output from CWD or the script-relative default."""
+    if output_path is None:
+        return Path(__file__).resolve().parent / "sample_classroom.mp4"
+
+    path = Path(output_path).expanduser()
+    return path.resolve() if path.is_absolute() else (Path.cwd() / path).resolve()
 
 
 def draw_human_figure(
@@ -48,7 +58,7 @@ def draw_human_figure(
 
 
 def generate_classroom_clip(
-    output_path: str = "pop/ml/sample_classroom.mp4",
+    output_path: str | os.PathLike[str] | None = None,
     duration_sec: int = 14,
     fps: int = 25,
     width: int = 640,
@@ -68,6 +78,7 @@ def generate_classroom_clip(
     Returns:
         str: Absolute path to the generated MP4 file.
     """
+    output_path = str(resolve_output_path(output_path))
     os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
     fourcc = cv2.VideoWriter_fourcc(*"mp4v")
     out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
@@ -178,7 +189,11 @@ def generate_classroom_clip(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Generate synthetic CCTV classroom video fixture")
-    parser.add_argument("--output", default="pop/ml/sample_classroom.mp4", help="Output MP4 path")
+    parser.add_argument(
+        "--output",
+        default=None,
+        help="Output MP4 path (default: sample_classroom.mp4 next to this script)",
+    )
     parser.add_argument("--duration", type=int, default=14, help="Duration in seconds")
     args = parser.parse_args()
     generate_classroom_clip(output_path=args.output, duration_sec=args.duration)
