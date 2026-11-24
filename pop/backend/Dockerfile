@@ -19,10 +19,6 @@ COPY requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r /app/requirements.txt
 
-# TEMP FIX: SQLAlchemy 2.1 needs greenlet for async. Remove once
-# requirements.txt uses sqlalchemy[asyncio]
-RUN pip install --no-cache-dir greenlet email-validator
-
 # Copy application source code
 COPY . /app
 

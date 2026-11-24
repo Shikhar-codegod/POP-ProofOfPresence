@@ -7,5 +7,6 @@ coverage/
 .env*
 !.env.example
 pop/edge/config.local.yaml
+pop/edge/output/
 pop/ml/clips/
 pop/ml/label_frames/
