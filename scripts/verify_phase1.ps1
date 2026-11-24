@@ -134,20 +134,19 @@ if ((Test-Path $EdgePython) -and (Test-Path $Config) -and (Test-Path $Video) -an
         if ($loginPassed) {
             $csvRows = Import-Csv (Join-Path $RepoRoot "pop\edge\output\readings.csv")
             $csvStable = [int]$csvRows[-1].stable_count
-            $headers = @{ Authorization = "Bearer $($login.access_token)" }
-            $centre = Invoke-RestMethod -Uri "$ApiBase/api/v1/centres/$CentreId" -Headers $headers -Method Get -TimeoutSec 10
-            $latestStable = $null
-            $latestTimestamp = $null
-            foreach ($camera in $centre.cameras) {
-                if ($camera.id -eq $cameraId -and $camera.latest_reading) {
-                    $latestStable = [int]$camera.latest_reading.stable_count
-                    $latestTimestamp = $camera.latest_reading.timestamp
-                }
-            }
-            $matchPassed = $latestStable -eq $csvStable
-            Add-Result "Latest stable_count match" $matchPassed "API stable=$latestStable; CSV stable=$csvStable; timestamp=$latestTimestamp"
+            $lastVideoSec = [double]$csvRows[-1].video_time_sec
+            $parsedStart = [datetimeoffset]::Parse($startTime)
+            $expectedUtc = $parsedStart.UtcDateTime.AddSeconds($lastVideoSec)
+            $expectedTimestamp = $expectedUtc.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'")
+            Push-Location $InfraDir
+            $exactOutput = & docker compose exec -T postgres psql -U $u -d $d -tAc "select stable_count from readings where camera_id='$cameraId' and timestamp='$expectedTimestamp'::timestamptz;" 2>$null
+            Pop-Location
+            $exactRow = $exactOutput | Select-Object -First 1
+            $exactStable = if ($exactRow) { [int]$exactRow.ToString().Trim() } else { $null }
+            $matchPassed = $null -ne $exactStable -and $exactStable -eq $csvStable
+            Add-Result "Exact timestamp match" $matchPassed "timestamp=$expectedTimestamp; DB stable=$exactStable; CSV stable=$csvStable"
         } else {
-            Add-Result "Latest stable_count match" $false "Skipped: admin login unavailable"
+            Add-Result "Exact timestamp match" $false "Skipped: admin login unavailable"
         }
     } catch {
         Add-Result "Edge/API verification" $false ("exit=$LASTEXITCODE; " + (Mask-Stderr $_.Exception.Message))
@@ -158,7 +157,7 @@ if ((Test-Path $EdgePython) -and (Test-Path $Config) -and (Test-Path $Video) -an
     Add-Result "Edge first run" $false "Skipped: edge Python, config, video, or POP_DEVICE_KEY unavailable"
     Add-Result "Edge duplicate run" $false "Skipped: edge Python, config, video, or POP_DEVICE_KEY unavailable"
     Add-Result "Reading count unchanged" $false "Skipped: edge run unavailable"
-    Add-Result "Latest stable_count match" $false "Skipped: edge run or admin login unavailable"
+    Add-Result "Exact timestamp match" $false "Skipped: edge run or admin login unavailable"
 }
 
 $Results | Format-Table -AutoSize -Wrap

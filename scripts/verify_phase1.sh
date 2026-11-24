@@ -80,8 +80,9 @@ if [[ -f "$CONFIG" && -f "$VIDEO" && -x "$EDGE_PYTHON" && -n "${POP_DEVICE_KEY:-
   COUNT_BEFORE="$(docker compose exec -T postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc "select count(*) from readings where camera_id='$CAMERA_ID';" | tr -d '[:space:]')"
 
   cd "$REPO_ROOT"
+  START_TIME="$(python -c 'from datetime import datetime,timezone,timedelta; print((datetime.now(timezone.utc)-timedelta(seconds=30)).strftime("%Y-%m-%dT%H:%M:%SZ"))')"
   set +e
-  FIRST_LOG="$("$EDGE_PYTHON" pop/edge/run_edge.py --config "$CONFIG" --video "$VIDEO" 2>&1)"
+  FIRST_LOG="$("$EDGE_PYTHON" pop/edge/run_edge.py --config "$CONFIG" --video "$VIDEO" --start-time "$START_TIME" 2>&1)"
   FIRST_EXIT=$?
   set -e
   FIRST_201="$(grep -c 'Reading POST HTTP 201' <<<"$FIRST_LOG" || true)"
@@ -97,7 +98,7 @@ if [[ -f "$CONFIG" && -f "$VIDEO" && -x "$EDGE_PYTHON" && -n "${POP_DEVICE_KEY:-
   cd "$REPO_ROOT"
 
   set +e
-  SECOND_LOG="$("$EDGE_PYTHON" pop/edge/run_edge.py --config "$CONFIG" --video "$VIDEO" 2>&1)"
+  SECOND_LOG="$("$EDGE_PYTHON" pop/edge/run_edge.py --config "$CONFIG" --video "$VIDEO" --start-time "$START_TIME" 2>&1)"
   SECOND_EXIT=$?
   set -e
   SECOND_200="$(grep -c 'Reading POST HTTP 200' <<<"$SECOND_LOG" || true)"
@@ -119,22 +120,24 @@ if [[ -f "$CONFIG" && -f "$VIDEO" && -x "$EDGE_PYTHON" && -n "${POP_DEVICE_KEY:-
 
   if [[ -n "$LOGIN_TOKEN" ]]; then
     CSV_STABLE="$(python -c 'import csv,sys; r=list(csv.DictReader(open(sys.argv[1],encoding="utf-8"))); print(r[-1]["stable_count"])' "$REPO_ROOT/pop/edge/output/readings.csv")"
-    CENTRE_JSON="$(curl.exe -fsS -H "Authorization: Bearer $LOGIN_TOKEN" "$API_BASE/api/v1/centres/$CENTRE_ID")"
-    API_RESULT="$(python -c 'import json,sys; d=json.load(sys.stdin); c=next((c for c in d["cameras"] if c.get("latest_reading")),None); print("" if not c else str(c["latest_reading"]["stable_count"])+"|"+str(c["latest_reading"]["timestamp"]))' <<<"$CENTRE_JSON")"
-    API_STABLE="${API_RESULT%%|*}"
-    if [[ "$API_STABLE" == "$CSV_STABLE" ]]; then
-      add_result "Latest stable_count match" "PASS" "API stable=$API_STABLE; CSV stable=$CSV_STABLE"
+    LAST_VIDEO_SEC="$(python -c 'import csv,sys; r=list(csv.DictReader(open(sys.argv[1],encoding="utf-8"))); print(r[-1]["video_time_sec"])' "$REPO_ROOT/pop/edge/output/readings.csv")"
+    EXPECTED_TIMESTAMP="$(python -c 'import sys; from datetime import datetime,timedelta,timezone; s=datetime.fromisoformat(sys.argv[1].replace(\"Z\",\"+00:00\")); print((s+timedelta(seconds=float(sys.argv[2]))).astimezone(timezone.utc).strftime(\"%Y-%m-%dT%H:%M:%SZ\"))' "$START_TIME" "$LAST_VIDEO_SEC")"
+    cd "$INFRA_DIR"
+    DB_STABLE="$(docker compose exec -T postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc "select stable_count from readings where camera_id='$CAMERA_ID' and timestamp='$EXPECTED_TIMESTAMP'::timestamptz;" | tr -d '[:space:]')"
+    cd "$REPO_ROOT"
+    if [[ "$DB_STABLE" == "$CSV_STABLE" ]]; then
+      add_result "Exact timestamp match" "PASS" "timestamp=$EXPECTED_TIMESTAMP; DB stable=$DB_STABLE; CSV stable=$CSV_STABLE"
     else
-      add_result "Latest stable_count match" "FAIL" "API stable=$API_STABLE; CSV stable=$CSV_STABLE"
+      add_result "Exact timestamp match" "FAIL" "timestamp=$EXPECTED_TIMESTAMP; DB stable=$DB_STABLE; CSV stable=$CSV_STABLE"
     fi
   else
-    add_result "Latest stable_count match" "FAIL" "Skipped: admin login unavailable"
+    add_result "Exact timestamp match" "FAIL" "Skipped: admin login unavailable"
   fi
 else
   add_result "Edge first run" "FAIL" "Skipped: edge Python, config, video, or POP_DEVICE_KEY unavailable"
   add_result "Edge duplicate run" "FAIL" "Skipped: edge Python, config, video, or POP_DEVICE_KEY unavailable"
   add_result "Reading count unchanged" "FAIL" "Skipped: edge run unavailable"
-  add_result "Latest stable_count match" "FAIL" "Skipped: edge run or admin login unavailable"
+  add_result "Exact timestamp match" "FAIL" "Skipped: edge run or admin login unavailable"
 fi
 
 printf "%-28s %-4s %s\n" "CHECK" "STATUS" "DETAIL"
