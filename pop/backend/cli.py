@@ -106,6 +106,65 @@ def create_device_key_cmd(name: str, centre_code: str | None = None, camera_id_s
         print("================================================================================\n")
 
 
+def list_active_device_keys_cmd(camera_id_str: str) -> None:
+    """List active device key metadata for one camera without exposing key hashes."""
+    try:
+        camera_id = uuid.UUID(camera_id_str.strip())
+    except ValueError:
+        logger.error("Invalid camera UUID.")
+        sys.exit(1)
+
+    with SyncSessionLocal() as session:
+        rows = session.execute(
+            select(DeviceKey).where(
+                DeviceKey.camera_id == camera_id,
+                DeviceKey.is_active.is_(True),
+            ).order_by(DeviceKey.created_at)
+        ).scalars().all()
+
+    print("id | name | created_at | expires_at")
+    for row in rows:
+        print(f"{row.id} | {row.name} | {row.created_at.isoformat()} | {row.expires_at.isoformat() if row.expires_at else ''}")
+
+
+def revoke_other_device_keys_cmd(camera_id_str: str, keep_id_str: str) -> None:
+    """Revoke every active device key for a camera except the selected key."""
+    try:
+        camera_id = uuid.UUID(camera_id_str.strip())
+        keep_id = uuid.UUID(keep_id_str.strip())
+    except ValueError:
+        logger.error("Invalid camera or key UUID.")
+        sys.exit(1)
+
+    keep_key = None
+    with SyncSessionLocal() as session:
+        keep_key = session.execute(
+            select(DeviceKey).where(
+                DeviceKey.id == keep_id,
+                DeviceKey.camera_id == camera_id,
+                DeviceKey.is_active.is_(True),
+            )
+        ).scalar_one_or_none()
+        if keep_key is None:
+            logger.error("Keep key was not found as an active key for this camera.")
+            sys.exit(1)
+
+        rows = session.execute(
+            select(DeviceKey).where(
+                DeviceKey.camera_id == camera_id,
+                DeviceKey.is_active.is_(True),
+                DeviceKey.id != keep_id,
+            )
+        ).scalars().all()
+        revoked = 0
+        for row in rows:
+            row.is_active = False
+            revoked += 1
+        session.commit()
+
+    print(f"Revoked {revoked} active key(s); retained key id {keep_id}")
+
+
 def main() -> None:
     """CLI argument parser entry point."""
     parser = argparse.ArgumentParser(description="POP (ProofOfPresence) CLI Management Tool")
@@ -128,12 +187,29 @@ def main() -> None:
     key_parser.add_argument("--centre-code", required=False, help="Associated Centre code (optional)")
     key_parser.add_argument("--camera-id", required=False, help="Associated Camera UUID (optional)")
 
+    list_keys_parser = subparsers.add_parser(
+        "list-active-device-keys",
+        help="List active device key metadata for a camera",
+    )
+    list_keys_parser.add_argument("--camera-id", required=True)
+
+    revoke_keys_parser = subparsers.add_parser(
+        "revoke-other-device-keys",
+        help="Revoke active device keys for a camera except one key",
+    )
+    revoke_keys_parser.add_argument("--camera-id", required=True)
+    revoke_keys_parser.add_argument("--keep-id", required=True)
+
     args = parser.parse_args()
 
     if args.command == "create-user":
         create_user_cmd(email=args.email, password=args.password, role_str=args.role)
     elif args.command == "create-device-key":
         create_device_key_cmd(name=args.name, centre_code=args.centre_code, camera_id_str=args.camera_id)
+    elif args.command == "list-active-device-keys":
+        list_active_device_keys_cmd(args.camera_id)
+    elif args.command == "revoke-other-device-keys":
+        revoke_other_device_keys_cmd(args.camera_id, args.keep_id)
 
 
 if __name__ == "__main__":
