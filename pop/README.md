@@ -148,6 +148,31 @@ Artifacts produced in `pop/edge/output/`:
 - `count_timeline.png`: Matplotlib chart comparing raw vs. stable median counts.
 - `annotated_detection.mp4` (when `--save-video` is passed): Preview clip with bounding boxes and trainer exclusion zone.
 
+### Phase 1 verification scripts
+
+The verification scripts require Docker, the seeded backend stack, environment-variable credentials,
+and a real or synthetic test video. They never print credentials or JWT values.
+
+PowerShell from the repository root:
+
+```powershell
+$env:POP_ADMIN_EMAIL = "..."
+$env:POP_ADMIN_PASSWORD = "..."
+$env:POP_DEVICE_KEY = "..."
+powershell -ExecutionPolicy Bypass -File scripts\verify_phase1.ps1
+```
+
+Bash:
+
+```bash
+export POP_ADMIN_EMAIL='...'
+export POP_ADMIN_PASSWORD='...'
+export POP_DEVICE_KEY='...'
+bash scripts/verify_phase1.sh
+```
+
+Optional variables: `POP_VERIFY_VIDEO`, `POP_VERIFY_CONFIG`, `POP_CENTRE_ID`, and `POP_API_URL`.
+
 ### 6. Query `GET /api/v1/centres/{id}` with `curl`
 
 Authenticate as the seeded inspector to obtain a Bearer JWT, then inspect a centre dossier (for example, PMKK Gurugram `a1000000-0000-4000-8000-000000000001`):
