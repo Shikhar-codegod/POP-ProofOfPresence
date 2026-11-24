@@ -12,7 +12,6 @@ import argparse
 import csv
 import logging
 import os
-import sys
 from datetime import datetime, timezone
 from typing import Any
 
@@ -31,14 +30,21 @@ def load_ground_truth(csv_path: str) -> list[dict[str, Any]]:
     records = []
     with open(csv_path, encoding="utf-8") as f:
         reader = csv.DictReader(f)
+        fieldnames = set(reader.fieldnames or [])
+        missing = {"video_id", "timestamp_sec", "true_count"} - fieldnames
+        if missing:
+            raise ValueError(
+                f"Ground truth CSV '{csv_path}' is missing required column(s): "
+                f"{', '.join(sorted(missing))}"
+            )
         for row in reader:
             try:
                 records.append({
-                    "video_id": row.get("video_id", "unknown").strip(),
+                    "video_id": (row.get("video_id") or "").strip(),
                     "timestamp_sec": float(row["timestamp_sec"]),
                     "true_count": int(row["true_count"]),
-                    "scenario": row.get("scenario", "default").strip(),
-                    "notes": row.get("notes", "").strip(),
+                    "scenario": (row.get("scenario") or "default").strip(),
+                    "notes": (row.get("notes") or "").strip(),
                 })
             except (ValueError, KeyError) as exc:
                 logger.warning(f"Skipping malformed ground truth row {row}: {exc}")
@@ -90,6 +96,13 @@ def join_by_nearest_timestamp(
     """
     if not pred_records:
         return []
+
+    available_video_ids = {record["video_id"] for record in gt_records}
+    if video_id_filter and video_id_filter not in available_video_ids:
+        raise ValueError(
+            f"Ground truth has no rows for video_id '{video_id_filter}'. "
+            f"Available video_id values: {', '.join(sorted(available_video_ids))}"
+        )
 
     matched = []
     for gt in gt_records:
@@ -256,8 +269,10 @@ def evaluate(
     )
 
     if not matched:
-        logger.error("No valid timestamp matches found between predictions and ground truth.")
-        sys.exit(1)
+        raise ValueError(
+            "No valid timestamp matches found between predictions and ground truth "
+            "(maximum tolerance: 2.0 seconds)."
+        )
 
     overall = compute_metrics(matched)
     breakdown = compute_scenario_breakdown(matched)

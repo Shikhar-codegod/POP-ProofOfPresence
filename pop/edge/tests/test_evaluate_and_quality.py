@@ -3,7 +3,12 @@
 import numpy as np
 import pytest
 from capture import sample_rtsp_stream
-from evaluate import compute_metrics, compute_scenario_breakdown, join_by_nearest_timestamp
+from evaluate import (
+    compute_metrics,
+    compute_scenario_breakdown,
+    join_by_nearest_timestamp,
+    load_ground_truth,
+)
 from quality import compute_frame_quality
 
 
@@ -61,3 +66,27 @@ def test_evaluate_join_and_metrics() -> None:
     assert breakdown["baseline"]["mae_stable"] == pytest.approx(0.5)
     assert breakdown["baseline"]["pct_within_one"] == pytest.approx(100.0)
     assert breakdown["occlusion"]["mae_stable"] == pytest.approx(2.0)
+
+
+def test_ground_truth_missing_required_column_is_clear(tmp_path) -> None:
+    path = tmp_path / "ground_truth.csv"
+    path.write_text("video_id,timestamp_sec,scenario\nv1,0.0,baseline\n", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="missing required column.*true_count"):
+        load_ground_truth(str(path))
+
+
+def test_ground_truth_unmatched_video_id_is_clear(tmp_path) -> None:
+    path = tmp_path / "ground_truth.csv"
+    path.write_text(
+        "video_id,timestamp_sec,true_count,scenario,notes\nv1,0.0,10,baseline,test\n",
+        encoding="utf-8",
+    )
+    gt = load_ground_truth(str(path))
+
+    with pytest.raises(ValueError, match="no rows for video_id 'missing'"):
+        join_by_nearest_timestamp(
+            gt,
+            [{"video_time_sec": 0.0, "raw_count": 10, "stable_count": 10, "frame_quality": 1.0}],
+            video_id_filter="missing",
+        )
